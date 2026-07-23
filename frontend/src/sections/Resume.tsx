@@ -27,7 +27,7 @@ export default function Resume({ profile }: ResumeProps) {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-60px" }}
+        viewport={{ once: true, amount: 0.15, margin: "0px 0px -8% 0px" }}
         transition={{ duration: 0.5 }}
         className="mx-auto max-w-4xl overflow-hidden rounded-2xl glass"
       >

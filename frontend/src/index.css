@@ -18,6 +18,13 @@
     scroll-behavior: smooth;
   }
 
+  /* Instant section jumps on phones / reduced-motion (long one-pagers feel laggy). */
+  @media (max-width: 768px), (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   /* Dark theme: pure black background. */
   body {
     @apply bg-black font-body text-slate-200 antialiased;
@@ -155,9 +162,9 @@
     @apply from-brand-700 via-brand-600 to-indigo-700;
   }
 
-  /* Frosted glass card. */
+  /* Frosted glass card. Skip heavy backdrop-blur on small screens for scroll FPS. */
   .glass {
-    @apply rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md;
+    @apply rounded-2xl border border-white/10 bg-white/5 md:backdrop-blur-md;
   }
   html:not(.dark) .glass {
     @apply border-2 border-slate-400 bg-white shadow-md;
@@ -301,8 +308,13 @@ html:not(.dark) .readme-body :where(h1, h2, h3, h4, h5, h6),
 html:not(.dark) .readme-body th {
   @apply text-slate-900;
 }
+/* Headings: bottom rule only (never a full box) in light theme. */
 html:not(.dark) .readme-body h1,
-html:not(.dark) .readme-body h2,
+html:not(.dark) .readme-body h2 {
+  border-width: 0;
+  border-bottom-width: 1px;
+  border-color: #cbd5e1; /* slate-300 */
+}
 html:not(.dark) .readme-body hr,
 html:not(.dark) .readme-body th,
 html:not(.dark) .readme-body td,
@@ -418,4 +430,12 @@ html:not(.dark) .section-eyebrow {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+}
+
+/* Status chips (e.g. Experience “Current”) — pale green washes out on white. */
+html:not(.dark) .text-green-300 {
+  @apply text-emerald-700;
+}
+html:not(.dark) .bg-green-500\/20 {
+  @apply bg-emerald-600/15;
 }

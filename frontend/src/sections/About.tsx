@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { FiAward, FiBriefcase, FiMapPin } from "react-icons/fi";
 
 import SectionHeading from "@/components/SectionHeading";
+import { highlightNumbers } from "@/lib/highlightNumbers";
 import type { Profile } from "@/types";
 
 interface AboutProps {
@@ -89,7 +90,7 @@ export default function About({ profile }: AboutProps) {
               {profile.achievements.map((a) => (
                 <li key={a} className="flex gap-2 text-sm text-slate-300">
                   <span className="text-brand-400">➤</span>
-                  {a}
+                  <span>{highlightNumbers(a)}</span>
                 </li>
               ))}
             </ul>

@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { FiBriefcase } from "react-icons/fi";
 
 import SectionHeading from "@/components/SectionHeading";
+import { highlightNumbers } from "@/lib/highlightNumbers";
 import type { Profile } from "@/types";
 
 interface ExperienceProps {
@@ -30,7 +31,7 @@ export default function Experience({ profile }: ExperienceProps) {
             key={`${exp.company}-${i}`}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
+            viewport={{ once: true, amount: 0.15, margin: "0px 0px -8% 0px" }}
             transition={{ duration: 0.5, delay: i * 0.1 }}
             className="relative mb-8 pl-12 sm:pl-16"
           >
@@ -43,7 +44,7 @@ export default function Experience({ profile }: ExperienceProps) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-heading text-lg font-semibold text-slate-100">{exp.role}</h3>
                 {exp.current && (
-                  <span className="rounded-full bg-green-500/20 px-3 py-0.5 text-xs font-medium text-green-300">
+                  <span className="rounded-full bg-green-500/20 px-3 py-0.5 text-xs font-semibold text-green-300">
                     Current
                   </span>
                 )}
@@ -56,7 +57,7 @@ export default function Experience({ profile }: ExperienceProps) {
                 {exp.highlights.map((h) => (
                   <li key={h} className="flex gap-2 text-sm text-slate-300">
                     <span className="mt-0.5 text-brand-400">➤</span>
-                    {h}
+                    <span>{highlightNumbers(h)}</span>
                   </li>
                 ))}
               </ul>

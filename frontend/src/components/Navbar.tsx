@@ -1,12 +1,14 @@
 /**
  * Navbar component.
  *
- * Purpose: Sticky top navigation with smooth-scroll section links, a theme
- *          toggle, and a resume download button.
+ * Purpose: Sticky top navigation with section links (home-aware), a theme
+ *          toggle, and a resume download button. Links always target `/#section`
+ *          so they work from project detail and admin routes too.
  *
  * Inputs:  theme ("dark"|"light"), onToggleTheme (fn), resumePdf (string url).
  */
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiMenu, FiMoon, FiSun, FiX } from "react-icons/fi";
 
@@ -19,17 +21,41 @@ interface NavbarProps {
 }
 
 const LINKS = [
-  { href: "#about", label: "About" },
-  { href: "#experience", label: "Experience" },
-  { href: "#skills", label: "Skills" },
-  { href: "#projects", label: "Projects" },
-  { href: "#leetcode", label: "LeetCode" },
-  { href: "#resume", label: "Resume" },
-  { href: "#contact", label: "Contact" },
+  { id: "about", label: "About" },
+  { id: "experience", label: "Experience" },
+  { id: "skills", label: "Skills" },
+  { id: "projects", label: "Projects" },
+  { id: "leetcode", label: "LeetCode" },
+  { id: "resume", label: "Resume" },
+  { id: "contact", label: "Contact" },
 ];
+
+function prefersInstantScroll() {
+  return (
+    window.matchMedia("(max-width: 768px)").matches ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
 
 export default function Navbar({ theme, onToggleTheme, resumePdf }: NavbarProps) {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const goToSection = (id: string) => (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setOpen(false);
+    const behavior = prefersInstantScroll() ? "auto" : "smooth";
+
+    if (location.pathname === "/") {
+      document.getElementById(id)?.scrollIntoView({ behavior });
+      window.history.replaceState(null, "", `/#${id}`);
+      return;
+    }
+
+    // Leave project/admin pages and land on the home section.
+    navigate(`/#${id}`);
+  };
 
   return (
     <motion.header
@@ -39,17 +65,22 @@ export default function Navbar({ theme, onToggleTheme, resumePdf }: NavbarProps)
       className="fixed inset-x-0 top-0 z-50"
     >
       <nav className="mx-auto mt-4 flex max-w-6xl items-center justify-between rounded-full px-5 py-3 glass sm:px-8">
-        <a href="#hero" className="font-heading text-lg font-bold tracking-tight">
+        <Link
+          to="/#hero"
+          onClick={goToSection("hero")}
+          className="font-heading text-lg font-bold tracking-tight"
+        >
           <span className="text-gradient">Aryan</span>
           <span className="text-slate-400">.dev</span>
-        </a>
+        </Link>
 
         {/* Desktop links */}
         <ul className="hidden items-center gap-6 md:flex">
           {LINKS.map((l) => (
-            <li key={l.href}>
+            <li key={l.id}>
               <a
-                href={l.href}
+                href={`/#${l.id}`}
+                onClick={goToSection(l.id)}
                 className="text-sm text-slate-300 transition hover:text-brand-300"
               >
                 {l.label}
@@ -92,10 +123,10 @@ export default function Navbar({ theme, onToggleTheme, resumePdf }: NavbarProps)
           className="mx-auto mt-2 flex max-w-6xl flex-col gap-1 rounded-2xl p-4 glass md:hidden"
         >
           {LINKS.map((l) => (
-            <li key={l.href}>
+            <li key={l.id}>
               <a
-                href={l.href}
-                onClick={() => setOpen(false)}
+                href={`/#${l.id}`}
+                onClick={goToSection(l.id)}
                 className="block rounded-lg px-3 py-2 text-slate-200 transition hover:bg-white/5 hover:text-brand-300"
               >
                 {l.label}

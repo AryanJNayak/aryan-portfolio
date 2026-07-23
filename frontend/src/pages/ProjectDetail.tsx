@@ -219,10 +219,15 @@ export default function ProjectDetail() {
                 )}
 
                 {readmeHtml && !readmeLoading && (
-                  <div
-                    className="readme-body overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-8"
-                    dangerouslySetInnerHTML={{ __html: readmeHtml }}
-                  />
+                  /* Keep `border` off the same node as `readme-body` — light-theme
+                     border remaps compose into `.border.readme-body h*` and turn
+                     heading underlines into full boxes. */
+                  <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-8">
+                    <div
+                      className="readme-body"
+                      dangerouslySetInnerHTML={{ __html: readmeHtml }}
+                    />
+                  </div>
                 )}
               </section>
             )}

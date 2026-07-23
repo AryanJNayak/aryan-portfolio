@@ -19,7 +19,7 @@ export default function SectionHeading({ eyebrow, title }: SectionHeadingProps) 
       className="mb-12 text-center"
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
+      viewport={{ once: true, amount: 0.2, margin: "0px 0px -10% 0px" }}
       transition={{ duration: 0.5 }}
     >
       <p className="section-eyebrow mb-2 text-sm font-semibold uppercase tracking-[0.3em] text-brand-400">
