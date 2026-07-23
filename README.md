@@ -11,12 +11,15 @@
 </p>
 
 <p>
+  <a href="https://aryan-dev-psi.vercel.app/"><img src="https://img.shields.io/badge/Live_Portfolio-000000?style=for-the-badge&logo=vercel&logoColor=white" /></a>
   <a href="https://github.com/AryanJNayak"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" /></a>
   <a href="https://www.linkedin.com/in/aryannayak15/"><img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" /></a>
   <a href="https://leetcode.com/u/Jsjsn73/"><img src="https://img.shields.io/badge/LeetCode-FFA116?style=for-the-badge&logo=leetcode&logoColor=white" /></a>
   <a href="https://www.geeksforgeeks.org/user/aryannayak1509/"><img src="https://img.shields.io/badge/GeeksforGeeks-2F8D46?style=for-the-badge&logo=geeksforgeeks&logoColor=white" /></a>
   <a href="mailto:aryannayak1509@gmail.com"><img src="https://img.shields.io/badge/Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" /></a>
 </p>
+
+**🌐 Portfolio:** [https://aryan-dev-psi.vercel.app/](https://aryan-dev-psi.vercel.app/)
 
 </div>
 
@@ -86,6 +89,10 @@ clean, efficient solutions — from RAG systems and OCR pipelines to high-perfor
 ---
 
 ## 🌐 This Portfolio
+
+**Live site:** [https://aryan-dev-psi.vercel.app/](https://aryan-dev-psi.vercel.app/)
+
+Frontend on **Vercel** · Backend on **Render** · Database on **MongoDB Atlas**
 
 This portfolio website is built with a modern full-stack architecture:
 
