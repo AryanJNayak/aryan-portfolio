@@ -2,17 +2,23 @@
  * AdminPage.
  *
  * Purpose: Protected dashboard where the owner logs in, syncs official data
- *          (GitHub / LeetCode) into DB+Redis, then lists / creates / edits /
- *          deletes curated projects.
+ *          (GitHub / LeetCode) into DB+Redis, benchmarks cache latency, then
+ *          lists / creates / edits / deletes curated projects.
  *
  * Route:   /admin
  */
 import { useEffect, useState } from "react";
-import { FiEdit2, FiLogOut, FiPlus, FiRefreshCw, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiLogOut, FiPlus, FiRefreshCw, FiTrash2, FiZap } from "react-icons/fi";
 
 import LoginForm from "@/admin/LoginForm";
 import ProjectEditor from "@/admin/ProjectEditor";
-import { getSyncStatus, syncPortfolioData, type SyncStatus } from "@/api/admin";
+import {
+  getSyncStatus,
+  runCacheBenchmark,
+  syncPortfolioData,
+  type CacheBenchmarkResult,
+  type SyncStatus,
+} from "@/api/admin";
 import { logout, verifyAuth } from "@/api/auth";
 import { deleteProject, getCuratedProjects } from "@/api/projects";
 import type { Project } from "@/types";
@@ -24,6 +30,11 @@ function formatSyncedAt(iso: string | null | undefined): string {
   return date.toLocaleString();
 }
 
+function formatMs(ms: number | null | undefined): string {
+  if (ms == null) return "—";
+  return `${ms.toFixed(2)} ms`;
+}
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -32,6 +43,9 @@ export default function AdminPage() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [benchLoading, setBenchLoading] = useState(false);
+  const [benchmark, setBenchmark] = useState<CacheBenchmarkResult | null>(null);
+  const [benchError, setBenchError] = useState<string | null>(null);
 
   // Check the stored token on mount.
   useEffect(() => {
@@ -83,6 +97,21 @@ export default function AdminPage() {
     }
   };
 
+  /** Purpose: Time Redis vs Mongo on the server; also record client round-trip. */
+  const handleBenchmark = async () => {
+    setBenchLoading(true);
+    setBenchError(null);
+    try {
+      const result = await runCacheBenchmark(5);
+      setBenchmark(result);
+    } catch {
+      setBenchError("Benchmark failed. Sync data first and confirm Redis/Mongo are up.");
+      setBenchmark(null);
+    } finally {
+      setBenchLoading(false);
+    }
+  };
+
   /** Purpose: Delete a project after confirmation. */
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this project?")) return;
@@ -116,6 +145,15 @@ export default function AdminPage() {
                 >
                   <FiRefreshCw className={syncing ? "animate-spin" : ""} />
                   {syncing ? "Syncing…" : "Sync Data"}
+                </button>
+                <button
+                  onClick={handleBenchmark}
+                  disabled={benchLoading}
+                  className="btn-ghost"
+                  title="Compare Redis vs MongoDB read latency"
+                >
+                  <FiZap className={benchLoading ? "animate-pulse" : ""} />
+                  {benchLoading ? "Measuring…" : "Compare Cache"}
                 </button>
                 <button onClick={() => setCreating(true)} className="btn-primary">
                   <FiPlus /> New Project
@@ -158,6 +196,79 @@ export default function AdminPage() {
               >
                 {syncMessage}
               </p>
+            )}
+
+            {(benchmark || benchError) && (
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <p className="text-sm font-medium text-slate-200">Redis vs MongoDB</p>
+                {benchError && <p className="mt-2 text-sm text-amber-300">{benchError}</p>}
+                {benchmark && (
+                  <>
+                    <p className="mt-1 text-xs text-slate-500">{benchmark.summary.note}</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <div className="rounded-lg bg-white/5 px-3 py-2">
+                        <p className="text-xs text-slate-400">Redis avg</p>
+                        <p className="font-mono text-sm text-brand-300">
+                          {formatMs(benchmark.summary.redis_avg_ms)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-white/5 px-3 py-2">
+                        <p className="text-xs text-slate-400">MongoDB avg</p>
+                        <p className="font-mono text-sm text-slate-200">
+                          {formatMs(benchmark.summary.mongo_avg_ms)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-white/5 px-3 py-2">
+                        <p className="text-xs text-slate-400">Speedup</p>
+                        <p className="font-mono text-sm text-slate-200">
+                          {benchmark.summary.speedup != null
+                            ? `${benchmark.summary.speedup}×`
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Client round-trip for this benchmark call:{" "}
+                      <span className="font-mono text-slate-300">
+                        {formatMs(benchmark.client_roundtrip_ms ?? null)}
+                      </span>
+                      {!benchmark.redis_configured && (
+                        <span className="text-amber-300"> · Redis not connected</span>
+                      )}
+                    </p>
+                    <div className="mt-3 overflow-x-auto">
+                      <table className="w-full text-left text-xs text-slate-400">
+                        <thead>
+                          <tr className="border-b border-white/10 text-slate-500">
+                            <th className="py-1 pr-3 font-medium">Key</th>
+                            <th className="py-1 pr-3 font-medium">Redis</th>
+                            <th className="py-1 pr-3 font-medium">Mongo</th>
+                            <th className="py-1 font-medium">Speedup</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(benchmark.keys).map(([key, row]) => (
+                            <tr key={key} className="border-b border-white/5">
+                              <td className="py-1.5 pr-3 font-mono text-slate-300">{key}</td>
+                              <td className="py-1.5 pr-3 font-mono">
+                                {formatMs(row.redis_avg_ms)}
+                                {!row.redis_hit && row.redis_avg_ms != null ? " (miss)" : ""}
+                              </td>
+                              <td className="py-1.5 pr-3 font-mono">
+                                {formatMs(row.mongo_avg_ms)}
+                                {!row.mongo_hit ? " (miss)" : ""}
+                              </td>
+                              <td className="py-1.5 font-mono">
+                                {row.speedup != null ? `${row.speedup}×` : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         )}

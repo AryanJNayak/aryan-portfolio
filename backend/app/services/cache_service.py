@@ -95,3 +95,97 @@ async def get_sync_meta() -> dict:
     if isinstance(meta, dict):
         return meta
     return {"last_synced_at": None, "sources": {}}
+
+
+async def benchmark_cache(rounds: int = 5) -> dict:
+    """
+    Purpose: Compare Redis vs MongoDB read latency for synced portfolio keys.
+    Inputs:  rounds (int) - timed reads per store (clamped 1–20).
+    Output:  per-key samples + averages (server-side store latency only).
+    """
+    import time
+
+    from app.redis_client import ping_redis
+
+    rounds = max(1, min(int(rounds), 20))
+    keys = [KEY_MERGED_PROJECTS, KEY_GITHUB_REPOS, KEY_LEETCODE_STATS, KEY_SYNC_META]
+    redis_ok = await ping_redis()
+
+    results: dict[str, Any] = {
+        "rounds": rounds,
+        "redis_configured": redis_ok,
+        "keys": {},
+        "summary": {},
+    }
+
+    all_redis_ms: list[float] = []
+    all_mongo_ms: list[float] = []
+
+    for cache_id in keys:
+        redis_samples: list[float] = []
+        mongo_samples: list[float] = []
+        redis_hit = False
+        mongo_hit = False
+
+        for _ in range(rounds):
+            if redis_ok:
+                start = time.perf_counter()
+                data = await redis_get_json(_redis_key(cache_id))
+                redis_samples.append(round((time.perf_counter() - start) * 1000, 3))
+                if data is not None:
+                    redis_hit = True
+
+            start = time.perf_counter()
+            try:
+                doc = await get_cache_collection().find_one({"_id": cache_id})
+                data = doc.get("data") if doc else None
+            except Exception:
+                data = None
+            mongo_samples.append(round((time.perf_counter() - start) * 1000, 3))
+            if data is not None:
+                mongo_hit = True
+
+        redis_avg = (
+            round(sum(redis_samples) / len(redis_samples), 3) if redis_samples else None
+        )
+        mongo_avg = (
+            round(sum(mongo_samples) / len(mongo_samples), 3) if mongo_samples else None
+        )
+        speedup = (
+            round(mongo_avg / redis_avg, 2)
+            if redis_avg and mongo_avg and redis_avg > 0
+            else None
+        )
+
+        results["keys"][cache_id] = {
+            "redis_hit": redis_hit if redis_ok else False,
+            "mongo_hit": mongo_hit,
+            "redis_ms": redis_samples,
+            "mongo_ms": mongo_samples,
+            "redis_avg_ms": redis_avg,
+            "mongo_avg_ms": mongo_avg,
+            "speedup": speedup,
+        }
+        all_redis_ms.extend(redis_samples)
+        all_mongo_ms.extend(mongo_samples)
+
+    redis_avg = (
+        round(sum(all_redis_ms) / len(all_redis_ms), 3) if all_redis_ms else None
+    )
+    mongo_avg = (
+        round(sum(all_mongo_ms) / len(all_mongo_ms), 3) if all_mongo_ms else None
+    )
+    results["summary"] = {
+        "redis_avg_ms": redis_avg,
+        "mongo_avg_ms": mongo_avg,
+        "speedup": (
+            round(mongo_avg / redis_avg, 2)
+            if redis_avg and mongo_avg and redis_avg > 0
+            else None
+        ),
+        "note": (
+            "Server-side store latencies (backend → Redis / Mongo). "
+            "Browser time also includes network + FastAPI overhead."
+        ),
+    }
+    return results

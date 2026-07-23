@@ -6,7 +6,7 @@ Purpose:   Authenticated operations that refresh official external data into
            MongoDB + Redis for public consumption.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.middlewares.auth_middleware import require_admin
 from app.services import cache_service
@@ -34,3 +34,13 @@ async def sync_status() -> dict:
     Output:  {last_synced_at, ok, sources}
     """
     return await cache_service.get_sync_meta()
+
+
+@router.get("/cache-benchmark", dependencies=[Depends(require_admin)])
+async def cache_benchmark(rounds: int = Query(5, ge=1, le=20)) -> dict:
+    """
+    Route:   GET /api/admin/cache-benchmark?rounds=5  (admin only)
+    Purpose: Time Redis vs MongoDB reads for synced keys (server-side).
+    Output:  {rounds, redis_configured, keys, summary}
+    """
+    return await cache_service.benchmark_cache(rounds=rounds)
