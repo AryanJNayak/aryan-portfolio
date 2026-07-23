@@ -1,0 +1,421 @@
+/* Fonts (self-hosted via @fontsource, no external network needed). */
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/inter";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html.dark {
+    color-scheme: dark;
+  }
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Dark theme: pure black background. */
+  body {
+    @apply bg-black font-body text-slate-200 antialiased;
+  }
+
+  /* ---------------------------------------------------------------------
+     Light theme redesign.
+     The palette below is authored dark-first, so in light mode we remap
+     the dark-oriented text/border/surface utilities to high-contrast
+     light equivalents. Applied whenever <html> lacks the `dark` class.
+     --------------------------------------------------------------------- */
+  html:not(.dark) body {
+    @apply bg-slate-200 text-slate-800;
+  }
+
+  /* Text: shift the light-on-dark slate scale to dark-on-light. */
+  html:not(.dark) .text-slate-100 {
+    @apply text-slate-900;
+  }
+  html:not(.dark) .text-slate-200 {
+    @apply text-slate-800;
+  }
+  html:not(.dark) .text-slate-300 {
+    @apply text-slate-700;
+  }
+  html:not(.dark) .text-slate-400 {
+    @apply text-slate-600;
+  }
+  /* Brand accent text needs a deeper blue to read on light surfaces.
+     (Covers eyebrow labels, icons, links that use brand-300/brand-400.) */
+  html:not(.dark) .text-brand-300,
+  html:not(.dark) .text-brand-400 {
+    @apply text-brand-600;
+  }
+
+  /* Solid brand buttons: darker blue base + hover (avoid the bright cyan
+     brand-400/500 that looks washed out on a light background). */
+  html:not(.dark) .bg-brand-500 {
+    @apply bg-brand-600;
+  }
+  html:not(.dark) .hover\:bg-brand-400:hover {
+    @apply bg-brand-700;
+  }
+
+  /* Gradient headings: the light end (brand-300/400) washes out on a light
+     background, so shift the whole gradient to deeper blues. */
+  html:not(.dark) .text-gradient {
+    @apply from-brand-500 via-brand-600 to-brand-700;
+  }
+
+  /* Hover states are authored to get BRIGHTER (good on dark). On light we want
+     them to get DARKER instead, so remap the hover brand utilities. */
+  html:not(.dark) .hover\:bg-brand-400:hover {
+    @apply bg-brand-700;
+  }
+  html:not(.dark) .hover\:text-brand-300:hover {
+    @apply text-brand-700;
+  }
+  html:not(.dark) .hover\:text-brand-400:hover {
+    @apply text-brand-700;
+  }
+  html:not(.dark) .hover\:border-brand-400:hover {
+    @apply border-brand-600;
+  }
+  html:not(.dark) .hover\:border-brand-400\/40:hover {
+    @apply border-brand-600;
+  }
+
+  /* Borders: white-on-dark hairlines become clearly visible dark slate lines
+     so sections/cards don't blend into the light background. */
+  html:not(.dark) .border-white\/10 {
+    @apply border-slate-400;
+  }
+  html:not(.dark) .border-white\/20 {
+    @apply border-slate-500;
+  }
+  /* Full-bordered hairline cards (e.g. LeetCode stat cards, skill chips, code
+     window) get an extra-thick border in light mode. Targets elements that
+     carry the `border` utility so `border-b`/`border-t` dividers stay 1-sided. */
+  html:not(.dark) .border.border-white\/10 {
+    @apply border-2;
+  }
+  /* Faint brand-tinted card borders (e.g. LeetCode top-contest cards). */
+  html:not(.dark) .border-brand-400\/20 {
+    @apply border-2 border-slate-400;
+  }
+
+  /* Surfaces built for dark backgrounds become light cards. */
+  html:not(.dark) .bg-white\/5 {
+    @apply bg-white;
+  }
+  html:not(.dark) .bg-white\/10 {
+    @apply bg-slate-100;
+  }
+  html:not(.dark) .hover\:bg-white\/5:hover {
+    @apply bg-slate-100;
+  }
+  html:not(.dark) .bg-night-800 {
+    @apply bg-white;
+  }
+  html:not(.dark) .bg-night-700 {
+    @apply bg-slate-100;
+  }
+  /* Footer surface (dark translucent) → clean light bar. */
+  html:not(.dark) .bg-night-900\/60 {
+    @apply bg-white;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-heading;
+  }
+
+  /* Custom scrollbar. */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-night-900;
+  }
+  html:not(.dark) ::-webkit-scrollbar-track {
+    @apply bg-slate-200;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-brand-600/60;
+  }
+}
+
+@layer components {
+  /* Gradient text used for headings/highlights. */
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-300 via-brand-400 to-brand-600 bg-clip-text text-transparent;
+  }
+  /* Light theme: use a dark-blue gradient (no bright/pale tones) for contrast. */
+  html:not(.dark) .text-gradient {
+    @apply from-brand-700 via-brand-600 to-indigo-700;
+  }
+
+  /* Frosted glass card. */
+  .glass {
+    @apply rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md;
+  }
+  html:not(.dark) .glass {
+    @apply border-2 border-slate-400 bg-white shadow-md;
+  }
+
+  /* Section wrapper with consistent padding + max width. */
+  .section {
+    @apply mx-auto w-full max-w-6xl px-5 py-20 sm:px-8;
+  }
+
+  /* Primary pill button. */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-medium text-white shadow-glow transition hover:bg-brand-400 hover:shadow-[0_0_50px_-8px_rgba(56,189,248,0.7)] focus:outline-none focus:ring-2 focus:ring-brand-400;
+  }
+
+  /* Secondary outline button. */
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 font-medium text-slate-100 transition hover:border-brand-400 hover:text-brand-300;
+  }
+  html:not(.dark) .btn-ghost {
+    @apply border-slate-300 text-slate-700 hover:text-brand-600;
+  }
+}
+
+/* --- Rich text (TipTap) rendering in project cards ------------------------ */
+.prose-rich :where(h1, h2, h3) {
+  @apply font-heading text-slate-100;
+}
+html:not(.dark) .prose-rich :where(h1, h2, h3) {
+  @apply text-slate-900;
+}
+.prose-rich strong {
+  @apply font-bold text-white;
+}
+html:not(.dark) .prose-rich strong {
+  @apply text-slate-900;
+}
+.prose-rich ul {
+  @apply my-2 list-disc space-y-1 pl-6;
+}
+.prose-rich ol {
+  @apply my-2 list-decimal space-y-1 pl-6;
+}
+/* Arrow-styled list: apply class `arrow-list` from the editor. */
+.prose-rich ul[data-type="arrow"],
+.prose-rich ul.arrow-list {
+  @apply list-none pl-0;
+}
+.prose-rich ul[data-type="arrow"] > li::before,
+.prose-rich ul.arrow-list > li::before {
+  content: "➤";
+  @apply mr-2 text-brand-400;
+}
+.prose-rich a {
+  @apply text-brand-400 underline;
+}
+.prose-rich img {
+  @apply my-3 rounded-xl;
+}
+
+/* --- GitHub README (HTML rendered by GitHub API) -------------------------- */
+.readme-body {
+  @apply text-sm leading-relaxed text-slate-300;
+}
+.readme-body :where(h1, h2, h3, h4, h5, h6) {
+  @apply mb-3 mt-6 font-heading font-semibold text-slate-100 first:mt-0;
+}
+.readme-body h1 {
+  @apply border-b border-white/10 pb-2 text-2xl;
+}
+.readme-body h2 {
+  @apply border-b border-white/10 pb-2 text-xl;
+}
+.readme-body h3 {
+  @apply text-lg;
+}
+.readme-body p {
+  @apply my-3;
+}
+.readme-body a {
+  @apply text-brand-400 underline underline-offset-2 hover:text-brand-300;
+}
+/* GitHub heading “link” icons (chain) — force brand blue so they’re visible on dark. */
+.readme-body a.anchor,
+.readme-body :where(h1, h2, h3, h4, h5, h6) > a {
+  @apply text-brand-400 no-underline hover:text-brand-300;
+}
+.readme-body a.anchor svg,
+.readme-body .octicon-link,
+.readme-body :where(h1, h2, h3, h4, h5, h6) > a svg {
+  fill: currentColor;
+  color: #38bdf8; /* brand-400 */
+}
+.readme-body a.anchor:hover svg,
+.readme-body :where(h1, h2, h3, h4, h5, h6) > a:hover svg {
+  color: #7dd3fc; /* brand-300 */
+}
+.readme-body ul {
+  @apply my-3 list-disc space-y-1 pl-6;
+}
+.readme-body ol {
+  @apply my-3 list-decimal space-y-1 pl-6;
+}
+.readme-body li {
+  @apply my-0.5;
+}
+.readme-body blockquote {
+  @apply my-3 border-l-4 border-brand-500/50 pl-4 italic text-slate-400;
+}
+.readme-body pre {
+  @apply my-4 overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-4 text-[13px];
+}
+.readme-body code {
+  @apply rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.9em];
+}
+.readme-body pre code {
+  @apply bg-transparent p-0;
+}
+.readme-body table {
+  @apply my-4 w-full border-collapse overflow-hidden rounded-xl text-left text-sm;
+}
+.readme-body th,
+.readme-body td {
+  @apply border border-white/10 px-3 py-2;
+}
+.readme-body th {
+  @apply bg-white/5 font-semibold text-slate-100;
+}
+.readme-body img {
+  @apply my-4 max-w-full rounded-xl;
+}
+.readme-body hr {
+  @apply my-6 border-white/10;
+}
+
+/* Light theme README contrast. */
+html:not(.dark) .readme-body {
+  @apply text-slate-700;
+}
+html:not(.dark) .readme-body :where(h1, h2, h3, h4, h5, h6),
+html:not(.dark) .readme-body th {
+  @apply text-slate-900;
+}
+html:not(.dark) .readme-body h1,
+html:not(.dark) .readme-body h2,
+html:not(.dark) .readme-body hr,
+html:not(.dark) .readme-body th,
+html:not(.dark) .readme-body td,
+html:not(.dark) .readme-body pre {
+  @apply border-slate-300;
+}
+html:not(.dark) .readme-body a {
+  @apply text-brand-600 hover:text-brand-700;
+}
+html:not(.dark) .readme-body a.anchor svg,
+html:not(.dark) .readme-body .octicon-link,
+html:not(.dark) .readme-body :where(h1, h2, h3, h4, h5, h6) > a svg {
+  color: #2563eb; /* brand-600 — readable on light */
+}
+html:not(.dark) .readme-body a.anchor:hover svg,
+html:not(.dark) .readme-body :where(h1, h2, h3, h4, h5, h6) > a:hover svg {
+  color: #1d4ed8; /* brand-700 */
+}
+html:not(.dark) .readme-body code {
+  @apply bg-slate-200 text-slate-800;
+}
+html:not(.dark) .readme-body pre {
+  @apply bg-slate-100;
+}
+html:not(.dark) .readme-body th {
+  @apply bg-slate-100;
+}
+html:not(.dark) .readme-body blockquote {
+  @apply text-slate-600;
+}
+
+/* Hero code window: pure CSS translate3d float. Keeps the card + text on one
+   compositor layer so they never desync / flicker (unlike Framer Motion y +
+   backdrop-blur, which re-paints every frame). */
+.code-window-float {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  animation: code-window-float 6s ease-in-out infinite;
+}
+@keyframes code-window-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .code-window-float {
+    animation: none;
+  }
+}
+
+/* Typing cursor + syntax colors for TypingCodeWindow. */
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: #38bdf8; /* brand-400 */
+  border-radius: 1px;
+  animation: typing-caret 1s steps(1) infinite;
+}
+@keyframes typing-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.tc-kw {
+  color: #38bdf8; /* brand-400 */
+}
+.tc-id {
+  color: #bae6fd; /* sky-200 */
+}
+.tc-key {
+  color: #c4b5fd; /* purple-300 */
+}
+.tc-str {
+  color: #6ee7b7; /* emerald-300 */
+}
+@media (prefers-reduced-motion: reduce) {
+  .typing-cursor {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* --- Light theme heading treatment ---------------------------------------
+   Requirement: in the light (white) theme, ALL headings (h1–h4) are SOLID
+   BLACK — never blue — while normal text / stats / the logo may stay blue.
+   These rules are intentionally unlayered so they override the `.text-gradient`
+   component style regardless of specificity.
+   ------------------------------------------------------------------------- */
+html:not(.dark) :is(h1, h2, h3, h4).text-gradient,
+html:not(.dark) :is(h1, h2, h3, h4) .text-gradient {
+  background-image: none;
+  -webkit-text-fill-color: #0f172a; /* slate-900 */
+  color: #0f172a;
+}
+
+/* Sub-headings (section eyebrow labels): black → blue gradient in light mode. */
+html:not(.dark) .section-eyebrow {
+  background-image: linear-gradient(to right, #0f172a, #2563eb); /* slate-900 → brand-600 */
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
