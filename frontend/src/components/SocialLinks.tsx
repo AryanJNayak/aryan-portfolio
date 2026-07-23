@@ -8,7 +8,7 @@
  */
 import { FaGithub, FaLinkedin, FaCode } from "react-icons/fa6";
 import { SiLeetcode, SiGeeksforgeeks } from "react-icons/si";
-import { FiMail } from "react-icons/fi";
+// import { FiMail } from "react-icons/fi";
 import type { IconType } from "react-icons";
 
 import type { Socials } from "@/types";
@@ -38,7 +38,7 @@ export default function SocialLinks({ socials, email, size = "sm" }: SocialLinks
     { href: socials.linkedin, label: "LinkedIn", Icon: FaLinkedin },
     { href: socials.leetcode, label: "LeetCode", Icon: SiLeetcode },
     { href: socials.geeksforgeeks, label: "GeeksforGeeks", Icon: SiGeeksforgeeks || FaCode },
-    { href: `mailto:${email.trim()}`, label: "Email", Icon: FiMail, isMail: true },
+    // { href: `mailto:${email.trim()}`, label: "Email", Icon: FiMail, isMail: true },
   ];
 
   const dim = size === "lg" ? "h-12 w-12 text-xl" : "h-10 w-10 text-lg";
