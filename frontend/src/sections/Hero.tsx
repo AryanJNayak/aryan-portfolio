@@ -85,6 +85,7 @@ export default function Hero({ profile }: HeroProps) {
             <DownloadPdfButton
               href={profile.resume_pdf}
               label="Download CV"
+              source="hero"
               className="btn-ghost"
             />
           </motion.div>

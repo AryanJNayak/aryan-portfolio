@@ -21,11 +21,13 @@ import Resume from "@/sections/Resume";
 import Skills from "@/sections/Skills";
 import { useProfile } from "@/hooks/useProfile";
 import { useTheme } from "@/hooks/useTheme";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
   const { profile } = useProfile();
   const location = useLocation();
+  usePageAnalytics();
 
   // When landing on `/#section` from another page, scroll after sections mount.
   useEffect(() => {

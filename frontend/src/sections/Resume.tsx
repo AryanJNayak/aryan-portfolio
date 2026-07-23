@@ -36,7 +36,7 @@ export default function Resume({ profile }: ResumeProps) {
             Aryan Nayak — CV
           </h3>
           <div className="flex w-full flex-wrap items-start justify-center gap-3 md:w-auto md:justify-end">
-            <DownloadPdfButton href={pdfUrl} label="Download PDF" />
+            <DownloadPdfButton href={pdfUrl} label="Download PDF" source="resume" />
             <a
               href={profile.resume_drive_url}
               target="_blank"
@@ -56,7 +56,7 @@ export default function Resume({ profile }: ResumeProps) {
           aria-label="Resume PDF preview"
         >
           <div className="flex flex-col items-center gap-4 p-10 text-center text-slate-400">
-            <DownloadPdfButton href={pdfUrl} label="Download PDF" />
+            <DownloadPdfButton href={pdfUrl} label="Download PDF" source="resume" />
           </div>
         </object>
       </motion.div>

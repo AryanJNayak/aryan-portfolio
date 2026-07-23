@@ -21,6 +21,7 @@ import { getProjectReadme } from "@/api/github";
 import { getProjectById } from "@/api/projects";
 import { useProfile } from "@/hooks/useProfile";
 import { useTheme } from "@/hooks/useTheme";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import type { Project } from "@/types";
 
 export default function ProjectDetail() {
@@ -29,6 +30,7 @@ export default function ProjectDetail() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { profile } = useProfile();
+  usePageAnalytics();
 
   const preloaded = (location.state as { project?: Project } | null)?.project ?? null;
   const [project, setProject] = useState<Project | null>(preloaded);

@@ -56,6 +56,11 @@ def get_cache_collection():
     return _db["cache"]
 
 
+def get_analytics_collection():
+    """Purpose: Access the `analytics` collection (page views / resume downloads)."""
+    return _db["analytics"]
+
+
 def get_gridfs_bucket() -> AsyncIOMotorGridFSBucket:
     """
     Purpose: Return a GridFS bucket for streaming media in/out of MongoDB.

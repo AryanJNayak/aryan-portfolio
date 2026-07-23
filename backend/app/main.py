@@ -20,7 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import ping
 from app.redis_client import ping_redis
-from app.routes import admin, auth, contact, github, leetcode, media, profile, projects
+from app.routes import admin, analytics, auth, contact, github, leetcode, media, profile, projects
 
 
 @asynccontextmanager
@@ -71,6 +71,7 @@ app.include_router(github.router)
 app.include_router(leetcode.router)
 app.include_router(media.router)
 app.include_router(contact.router)
+app.include_router(analytics.router)
 
 
 @app.get("/", tags=["health"])

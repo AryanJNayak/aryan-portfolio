@@ -1,15 +1,16 @@
 /**
  * AdminPage.
  *
- * Purpose: Protected dashboard where the owner logs in, syncs official data
- *          (GitHub / LeetCode) into DB+Redis, benchmarks cache latency, then
- *          lists / creates / edits / deletes curated projects.
+ * Purpose: Protected dashboard where the owner logs in, views site analytics,
+ *          syncs official data (GitHub / LeetCode) into DB+Redis, benchmarks
+ *          cache latency, then lists / creates / edits / deletes curated projects.
  *
  * Route:   /admin
  */
 import { useEffect, useState } from "react";
 import { FiEdit2, FiLogOut, FiPlus, FiRefreshCw, FiTrash2, FiZap } from "react-icons/fi";
 
+import AnalyticsPanel from "@/admin/AnalyticsPanel";
 import LoginForm from "@/admin/LoginForm";
 import ProjectEditor from "@/admin/ProjectEditor";
 import {
@@ -173,104 +174,108 @@ export default function AdminPage() {
         </div>
 
         {!showEditor && (
-          <div className="mb-6 rounded-xl p-4 glass">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium text-slate-200">Official data sync</p>
-                <p className="text-xs text-slate-400">
-                  Last sync: {formatSyncedAt(syncStatus?.last_synced_at)}
+          <>
+            <AnalyticsPanel />
+
+            <div className="mb-6 rounded-xl p-4 glass">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium text-slate-200">Official data sync</p>
+                  <p className="text-xs text-slate-400">
+                    Last sync: {formatSyncedAt(syncStatus?.last_synced_at)}
+                  </p>
+                </div>
+                <p className="max-w-md text-right text-xs text-slate-500">
+                  Public visitors only see data from your last sync (MongoDB + Redis). External APIs
+                  are not called until you sync again.
                 </p>
               </div>
-              <p className="text-xs text-slate-500 max-w-md text-right">
-                Public visitors only see data from your last sync (MongoDB + Redis). External APIs
-                are not called until you sync again.
-              </p>
-            </div>
-            {syncMessage && (
-              <p
-                className={`mt-3 text-sm ${
-                  syncMessage.startsWith("Sync failed") || syncMessage.includes("errors")
-                    ? "text-amber-300"
-                    : "text-brand-300"
-                }`}
-              >
-                {syncMessage}
-              </p>
-            )}
+              {syncMessage && (
+                <p
+                  className={`mt-3 text-sm ${
+                    syncMessage.startsWith("Sync failed") || syncMessage.includes("errors")
+                      ? "text-amber-300"
+                      : "text-brand-300"
+                  }`}
+                >
+                  {syncMessage}
+                </p>
+              )}
 
-            {(benchmark || benchError) && (
-              <div className="mt-4 border-t border-white/10 pt-4">
-                <p className="text-sm font-medium text-slate-200">Redis vs MongoDB</p>
-                {benchError && <p className="mt-2 text-sm text-amber-300">{benchError}</p>}
-                {benchmark && (
-                  <>
-                    <p className="mt-1 text-xs text-slate-500">{benchmark.summary.note}</p>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                      <div className="rounded-lg bg-white/5 px-3 py-2">
-                        <p className="text-xs text-slate-400">Redis avg</p>
-                        <p className="font-mono text-sm text-brand-300">
-                          {formatMs(benchmark.summary.redis_avg_ms)}
-                        </p>
+              {(benchmark || benchError) && (
+                <div className="mt-4 border-t border-white/10 pt-4">
+                  <p className="text-sm font-medium text-slate-200">Redis vs MongoDB</p>
+                  {benchError && <p className="mt-2 text-sm text-amber-300">{benchError}</p>}
+                  {benchmark && (
+                    <>
+                      <p className="mt-1 text-xs text-slate-500">{benchmark.summary.note}</p>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                        <div className="rounded-lg bg-white/5 px-3 py-2">
+                          <p className="text-xs text-slate-400">Redis avg</p>
+                          <p className="font-mono text-sm text-brand-300">
+                            {formatMs(benchmark.summary.redis_avg_ms)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-white/5 px-3 py-2">
+                          <p className="text-xs text-slate-400">MongoDB avg</p>
+                          <p className="font-mono text-sm text-slate-200">
+                            {formatMs(benchmark.summary.mongo_avg_ms)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-white/5 px-3 py-2">
+                          <p className="text-xs text-slate-400">Speedup</p>
+                          <p className="font-mono text-sm text-slate-200">
+                            {benchmark.summary.speedup != null
+                              ? `${benchmark.summary.speedup}×`
+                              : "—"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="rounded-lg bg-white/5 px-3 py-2">
-                        <p className="text-xs text-slate-400">MongoDB avg</p>
-                        <p className="font-mono text-sm text-slate-200">
-                          {formatMs(benchmark.summary.mongo_avg_ms)}
-                        </p>
-                      </div>
-                      <div className="rounded-lg bg-white/5 px-3 py-2">
-                        <p className="text-xs text-slate-400">Speedup</p>
-                        <p className="font-mono text-sm text-slate-200">
-                          {benchmark.summary.speedup != null
-                            ? `${benchmark.summary.speedup}×`
-                            : "—"}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Client round-trip for this benchmark call:{" "}
-                      <span className="font-mono text-slate-300">
-                        {formatMs(benchmark.client_roundtrip_ms ?? null)}
-                      </span>
-                      {!benchmark.redis_configured && (
-                        <span className="text-amber-300"> · Redis not connected</span>
-                      )}
-                    </p>
-                    <div className="mt-3 overflow-x-auto">
-                      <table className="w-full text-left text-xs text-slate-400">
-                        <thead>
-                          <tr className="border-b border-white/10 text-slate-500">
-                            <th className="py-1 pr-3 font-medium">Key</th>
-                            <th className="py-1 pr-3 font-medium">Redis</th>
-                            <th className="py-1 pr-3 font-medium">Mongo</th>
-                            <th className="py-1 font-medium">Speedup</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Object.entries(benchmark.keys).map(([key, row]) => (
-                            <tr key={key} className="border-b border-white/5">
-                              <td className="py-1.5 pr-3 font-mono text-slate-300">{key}</td>
-                              <td className="py-1.5 pr-3 font-mono">
-                                {formatMs(row.redis_avg_ms)}
-                                {!row.redis_hit && row.redis_avg_ms != null ? " (miss)" : ""}
-                              </td>
-                              <td className="py-1.5 pr-3 font-mono">
-                                {formatMs(row.mongo_avg_ms)}
-                                {!row.mongo_hit ? " (miss)" : ""}
-                              </td>
-                              <td className="py-1.5 font-mono">
-                                {row.speedup != null ? `${row.speedup}×` : "—"}
-                              </td>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Client round-trip for this benchmark call:{" "}
+                        <span className="font-mono text-slate-300">
+                          {formatMs(benchmark.client_roundtrip_ms ?? null)}
+                        </span>
+                        {!benchmark.redis_configured && (
+                          <span className="text-amber-300"> · Redis not connected</span>
+                        )}
+                      </p>
+                      <div className="mt-3 overflow-x-auto">
+                        <table className="w-full text-left text-xs text-slate-400">
+                          <thead>
+                            <tr className="border-b border-white/10 text-slate-500">
+                              <th className="py-1 pr-3 font-medium">Key</th>
+                              <th className="py-1 pr-3 font-medium">Redis</th>
+                              <th className="py-1 pr-3 font-medium">Mongo</th>
+                              <th className="py-1 font-medium">Speedup</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+                          </thead>
+                          <tbody>
+                            {Object.entries(benchmark.keys).map(([key, row]) => (
+                              <tr key={key} className="border-b border-white/5">
+                                <td className="py-1.5 pr-3 font-mono text-slate-300">{key}</td>
+                                <td className="py-1.5 pr-3 font-mono">
+                                  {formatMs(row.redis_avg_ms)}
+                                  {!row.redis_hit && row.redis_avg_ms != null ? " (miss)" : ""}
+                                </td>
+                                <td className="py-1.5 pr-3 font-mono">
+                                  {formatMs(row.mongo_avg_ms)}
+                                  {!row.mongo_hit ? " (miss)" : ""}
+                                </td>
+                                <td className="py-1.5 font-mono">
+                                  {row.speedup != null ? `${row.speedup}×` : "—"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {showEditor ? (

@@ -2,12 +2,14 @@
  * DownloadPdfButton component.
  *
  * Purpose: Download a PDF with a visible progress bar while the file streams.
+ *          Optionally records a resume_download analytics event on success.
  *
- * Inputs:  href (pdf url), label, className, filename (optional save name).
+ * Inputs:  href, label, className, filename, compact, source (analytics).
  */
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { FiDownload } from "react-icons/fi";
 
+import { trackEvent, type ResumeDownloadSource } from "@/api/analytics";
 import { downloadWithProgress } from "@/lib/download";
 
 interface DownloadPdfButtonProps {
@@ -17,6 +19,8 @@ interface DownloadPdfButtonProps {
   filename?: string;
   /** Compact variant (e.g. navbar) — progress bar overlays the button. */
   compact?: boolean;
+  /** Where the button lives — used for resume download analytics. */
+  source?: ResumeDownloadSource;
 }
 
 export default function DownloadPdfButton({
@@ -25,24 +29,28 @@ export default function DownloadPdfButton({
   className = "btn-primary",
   filename = "AryanNayak.pdf",
   compact = false,
+  source,
 }: DownloadPdfButtonProps) {
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState(false);
 
   const downloading = progress !== null && progress < 100;
 
-  const handleClick = async (e: React.MouseEvent) => {
+  const handleClick = async (e: MouseEvent) => {
     e.preventDefault();
     if (downloading) return;
     setError(false);
     setProgress(0);
     try {
       await downloadWithProgress(href, filename, setProgress);
+      void trackEvent({ event_type: "resume_download", source });
       setTimeout(() => setProgress(null), 600);
     } catch {
       setError(true);
       setProgress(null);
       window.open(href, "_blank", "noopener,noreferrer");
+      // Still count the fallback open as an intended download.
+      void trackEvent({ event_type: "resume_download", source });
     }
   };
 
