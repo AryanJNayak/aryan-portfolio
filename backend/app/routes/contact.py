@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends
 from app.database import get_contacts_collection
 from app.middlewares.auth_middleware import require_admin
 from app.schemas.contact import ContactCreate
-from app.services.email_service import send_contact_email, smtp_configured
+from app.services.email_service import email_configured, send_contact_email
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ async def create_contact(body: ContactCreate) -> dict:
     result = await get_contacts_collection().insert_one(doc)
 
     emailed = False
-    if smtp_configured():
+    if email_configured():
         try:
             await send_contact_email(
                 name=body.name,
@@ -46,9 +46,9 @@ async def create_contact(body: ContactCreate) -> dict:
             emailed = True
         except Exception:
             # Message is already saved — don't fail the visitor's submit.
-            logger.exception("Failed to send contact email via SMTP")
+            logger.exception("Failed to send contact email")
     else:
-        logger.warning("SMTP not configured — contact message saved without emailing")
+        logger.warning("Email not configured — contact message saved without emailing")
 
     return {"success": True, "id": str(result.inserted_id), "emailed": emailed}
 

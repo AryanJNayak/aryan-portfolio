@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
-    # SMTP (contact-form email notifications)
+    # SMTP (contact-form email — often blocked on Render free tier)
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     SMTP_TO: str = ""
     SMTP_USE_TLS: bool = True
     SMTP_USE_SSL: bool = False
+
+    # Resend (recommended on Render — HTTP API, not SMTP)
+    # https://resend.com — free tier works; use onboarding@resend.dev or a verified domain
+    RESEND_API_KEY: str = ""
+    RESEND_FROM: str = "Portfolio <onboarding@resend.dev>"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

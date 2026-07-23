@@ -24,13 +24,17 @@ export async function uploadMedia(file: File): Promise<MediaUploadResponse> {
 /**
  * Purpose: Submit the public contact form.
  * Inputs:  payload {name, email, subject?, message}.
- * Output:  Promise<void>.
+ * Output:  Promise<{ success, id, emailed }>.
  */
 export async function sendContact(payload: {
   name: string;
   email: string;
   subject?: string;
   message: string;
-}): Promise<void> {
-  await apiClient.post("/api/contact", payload);
+}): Promise<{ success: boolean; id: string; emailed: boolean }> {
+  const { data } = await apiClient.post<{ success: boolean; id: string; emailed: boolean }>(
+    "/api/contact",
+    payload,
+  );
+  return data;
 }

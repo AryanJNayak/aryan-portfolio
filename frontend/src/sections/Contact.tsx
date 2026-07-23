@@ -26,7 +26,7 @@ const EMPTY: ContactForm = { name: "", email: "", subject: "", message: "" };
 export default function Contact({ profile }: ContactProps) {
   const [form, setForm] = useState<ContactForm>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof ContactForm, string>>>({});
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "saved" | "error">("idle");
 
   /** Purpose: Update a single field and clear its error. */
   const update = (key: keyof ContactForm, value: string) => {
@@ -44,8 +44,8 @@ export default function Contact({ profile }: ContactProps) {
     }
     setStatus("sending");
     try {
-      await sendContact(form);
-      setStatus("sent");
+      const result = await sendContact(form);
+      setStatus(result.emailed ? "sent" : "saved");
       setForm(EMPTY);
     } catch {
       setStatus("error");
@@ -153,6 +153,12 @@ export default function Contact({ profile }: ContactProps) {
           {status === "sent" && (
             <p className="text-center text-sm text-green-400">
               Thanks! Your message has been sent.
+            </p>
+          )}
+          {status === "saved" && (
+            <p className="text-center text-sm text-amber-300">
+              Message received, but email delivery is temporarily unavailable. I’ll still see it —
+              or email me directly at {profile.email}.
             </p>
           )}
           {status === "error" && (

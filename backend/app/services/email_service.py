@@ -1,11 +1,11 @@
 """
-Email (SMTP) service.
+Email service.
 
 Purpose:
-    Send contact-form notifications to the portfolio owner via SMTP.
+    Send contact-form notifications to the portfolio owner.
 
-Inputs:
-    Contact fields (name, email, subject, message) + SMTP settings from env.
+    Prefer Resend (HTTP API) on hosts like Render that block outbound SMTP.
+    Fall back to SMTP when Resend is not configured (local / unrestricted hosts).
 """
 
 from __future__ import annotations
@@ -15,6 +15,8 @@ import logging
 import smtplib
 import ssl
 from email.message import EmailMessage
+
+import httpx
 
 from app.config import settings
 
@@ -26,23 +28,36 @@ def smtp_configured() -> bool:
     return bool(settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD)
 
 
-def _build_message(
-    *,
-    name: str,
-    email: str,
-    subject: str | None,
-    message: str,
-) -> EmailMessage:
-    """Purpose: Build a plain-text + HTML email from contact-form fields."""
-    topic = (subject or "").strip() or "New portfolio contact message"
-    text_body = (
+def resend_configured() -> bool:
+    """Purpose: True when Resend API key is set (works on Render free)."""
+    return bool(settings.RESEND_API_KEY)
+
+
+def email_configured() -> bool:
+    """Purpose: True when any email delivery backend is configured."""
+    return resend_configured() or smtp_configured()
+
+
+def _notify_to() -> str:
+    return settings.SMTP_TO or settings.ADMIN_EMAIL
+
+
+def _topic(subject: str | None) -> str:
+    return (subject or "").strip() or "New portfolio contact message"
+
+
+def _text_body(*, name: str, email: str, topic: str, message: str) -> str:
+    return (
         f"You received a new message from your portfolio contact form.\n\n"
         f"Name: {name}\n"
         f"Email: {email}\n"
         f"Subject: {topic}\n\n"
         f"Message:\n{message}\n"
     )
-    html_body = f"""\
+
+
+def _html_body(*, name: str, email: str, topic: str, message: str) -> str:
+    return f"""\
 <html>
   <body style="font-family: sans-serif; line-height: 1.5; color: #0f172a;">
     <h2 style="margin-bottom: 0.5rem;">New portfolio contact message</h2>
@@ -55,18 +70,31 @@ def _build_message(
 </html>
 """
 
+
+def _build_message(
+    *,
+    name: str,
+    email: str,
+    subject: str | None,
+    message: str,
+) -> EmailMessage:
+    """Purpose: Build a plain-text + HTML email from contact-form fields (SMTP)."""
+    topic = _topic(subject)
     msg = EmailMessage()
     msg["Subject"] = f"[Portfolio] {topic}"
     msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
-    msg["To"] = settings.SMTP_TO or settings.ADMIN_EMAIL
+    msg["To"] = _notify_to()
     msg["Reply-To"] = email
-    msg.set_content(text_body)
-    msg.add_alternative(html_body, subtype="html")
+    msg.set_content(_text_body(name=name, email=email, topic=topic, message=message))
+    msg.add_alternative(
+        _html_body(name=name, email=email, topic=topic, message=message),
+        subtype="html",
+    )
     return msg
 
 
 def _send_sync(msg: EmailMessage) -> None:
-    """Purpose: Deliver `msg` over SMTP (blocking)."""
+    """Purpose: Deliver `msg` over SMTP (blocking). Often blocked on Render free."""
     host = settings.SMTP_HOST
     port = settings.SMTP_PORT
     user = settings.SMTP_USER
@@ -91,6 +119,37 @@ def _send_sync(msg: EmailMessage) -> None:
         server.send_message(msg)
 
 
+async def _send_via_resend(
+    *,
+    name: str,
+    email: str,
+    subject: str | None,
+    message: str,
+) -> None:
+    """Purpose: Send via Resend HTTPS API (works on Render free tier)."""
+    topic = _topic(subject)
+    payload = {
+        "from": settings.RESEND_FROM,
+        "to": [_notify_to()],
+        "reply_to": email,
+        "subject": f"[Portfolio] {topic}",
+        "text": _text_body(name=name, email=email, topic=topic, message=message),
+        "html": _html_body(name=name, email=email, topic=topic, message=message),
+    }
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+        if resp.status_code >= 400:
+            detail = resp.text
+            raise RuntimeError(f"Resend API error {resp.status_code}: {detail}")
+
+
 async def send_contact_email(
     *,
     name: str,
@@ -99,14 +158,20 @@ async def send_contact_email(
     message: str,
 ) -> None:
     """
-    Purpose: Send the contact notification asynchronously (off the event loop).
-    Raises:  RuntimeError if SMTP is not configured; smtplib errors on failure.
+    Purpose: Send the contact notification (Resend preferred, else SMTP).
+    Raises:  RuntimeError if nothing is configured; provider errors on failure.
     """
-    if not smtp_configured():
+    if not email_configured():
         raise RuntimeError(
-            "SMTP is not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env"
+            "Email is not configured. Set RESEND_API_KEY (recommended on Render) "
+            "or SMTP_HOST / SMTP_USER / SMTP_PASSWORD."
         )
+
+    if resend_configured():
+        await _send_via_resend(name=name, email=email, subject=subject, message=message)
+        logger.info("Contact email sent via Resend to %s", _notify_to())
+        return
 
     msg = _build_message(name=name, email=email, subject=subject, message=message)
     await asyncio.to_thread(_send_sync, msg)
-    logger.info("Contact email sent to %s", settings.SMTP_TO or settings.ADMIN_EMAIL)
+    logger.info("Contact email sent via SMTP to %s", _notify_to())
