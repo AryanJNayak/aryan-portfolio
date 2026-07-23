@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     MONGODB_URI: str
     DB_NAME: str = "portfolio"
 
+    # Redis (optional — leave empty to use MongoDB cache only)
+    # Examples: redis://localhost:6379/0  |  rediss://default:TOKEN@host:6379
+    REDIS_URL: str = ""
+
     # Admin auth / JWT
     ADMIN_EMAIL: str
     ADMIN_PASSWORD: str
@@ -44,6 +48,17 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+    # SMTP (contact-form email notifications)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    # Optional overrides — defaults: FROM=SMTP_USER, TO=ADMIN_EMAIL
+    SMTP_FROM: str = ""
+    SMTP_TO: str = ""
+    SMTP_USE_TLS: bool = True
+    SMTP_USE_SSL: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

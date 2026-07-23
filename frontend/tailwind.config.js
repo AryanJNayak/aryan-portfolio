@@ -50,13 +50,19 @@ export default {
           "50%": { backgroundPosition: "100% 50%" },
         },
         shimmer: {
+          "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" },
+        },
+        "bounce-dot": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
         },
       },
       animation: {
         float: "float 6s ease-in-out infinite",
         "gradient-x": "gradient-x 6s ease infinite",
-        shimmer: "shimmer 2s infinite",
+        shimmer: "shimmer 1.6s ease-in-out infinite",
+        "bounce-dot": "bounce-dot 0.55s ease-in-out infinite",
       },
     },
   },

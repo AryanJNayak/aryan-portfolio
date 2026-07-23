@@ -7,8 +7,9 @@
  * Inputs:  profile (Profile).
  */
 import { motion } from "framer-motion";
-import { FiDownloadCloud, FiMapPin } from "react-icons/fi";
+import { FiMapPin } from "react-icons/fi";
 
+import DownloadPdfButton from "@/components/DownloadPdfButton";
 import SocialLinks from "@/components/SocialLinks";
 import TypingCodeWindow from "@/components/TypingCodeWindow";
 import type { Profile } from "@/types";
@@ -81,9 +82,11 @@ export default function Hero({ profile }: HeroProps) {
             <a href="#projects" className="btn-primary">
               View My Work
             </a>
-            <a href={profile.resume_pdf} download className="btn-ghost">
-              <FiDownloadCloud /> Download CV
-            </a>
+            <DownloadPdfButton
+              href={profile.resume_pdf}
+              label="Download CV"
+              className="btn-ghost"
+            />
           </motion.div>
 
           <motion.div

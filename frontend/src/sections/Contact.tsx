@@ -74,7 +74,12 @@ export default function Contact({ profile }: ContactProps) {
           </p>
 
           <a
-            href={`mailto:${profile.email}`}
+            href={`mailto:${profile.email.trim()}`}
+            onClick={(e) => {
+              // Harden mailto: some SPA/preview hosts ignore bare href navigation.
+              e.preventDefault();
+              window.location.assign(`mailto:${profile.email.trim()}`);
+            }}
             className="flex items-center gap-3 rounded-xl p-4 glass transition hover:border-brand-400/40"
           >
             <FiMail className="text-xl text-brand-400" />

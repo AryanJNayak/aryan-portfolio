@@ -2,25 +2,22 @@
 LeetCode routes.
 
 Base path: /api/leetcode
-Purpose:   Serve the LeetCode mini-profile (rating, KPIs, top contests) for the
-           stats card, cached 6 hours.
+Purpose:   Serve admin-synced LeetCode stats (no live GraphQL on public reads).
 """
 
 from fastapi import APIRouter
 
 from app.schemas.leetcode import LeetCodeStats
-from app.services.leetcode_service import fetch_leetcode_stats
+from app.services.leetcode_service import get_cached_stats
 
 router = APIRouter(prefix="/api/leetcode", tags=["leetcode"])
 
 
 @router.get("/stats", response_model=LeetCodeStats)
-async def get_stats(refresh: bool = False) -> dict:
+async def get_stats() -> dict:
     """
-    Route:   GET /api/leetcode/stats?refresh=false
-    Purpose: Return solved counts, contest rating, ranking and top contests.
-    Inputs:  query `refresh` (bool) - bypass the 6h cache.
+    Route:   GET /api/leetcode/stats
+    Purpose: Return last admin-synced stats (fallback if never synced).
     Output:  LeetCodeStats object.
-    Example: GET /api/leetcode/stats
     """
-    return await fetch_leetcode_stats(force_refresh=refresh)
+    return await get_cached_stats()

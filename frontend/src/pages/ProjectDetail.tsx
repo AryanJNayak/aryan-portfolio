@@ -89,7 +89,22 @@ export default function ProjectDetail() {
           <FiArrowLeft /> Back to projects
         </button>
 
-        {loading && <p className="text-center text-slate-400">Loading project…</p>}
+        {loading && (
+          <div className="mx-auto max-w-3xl space-y-4" aria-busy aria-label="Loading project">
+            <div className="relative h-10 w-2/3 overflow-hidden rounded-lg bg-white/10">
+              <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
+            <div className="relative aspect-video overflow-hidden rounded-2xl bg-white/5">
+              <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
+            <div className="relative h-4 w-full overflow-hidden rounded bg-white/5">
+              <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
+            <div className="relative h-4 w-5/6 overflow-hidden rounded bg-white/5">
+              <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
+          </div>
+        )}
 
         {notFound && !loading && (
           <div className="rounded-2xl p-10 text-center glass">

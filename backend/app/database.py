@@ -52,7 +52,7 @@ def get_contacts_collection():
 
 
 def get_cache_collection():
-    """Purpose: Access the `cache` collection (cached LeetCode/GitHub data)."""
+    """Purpose: Access the `cache` collection (admin-synced GitHub/LeetCode/projects)."""
     return _db["cache"]
 
 

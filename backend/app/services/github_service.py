@@ -2,30 +2,17 @@
 GitHub service.
 
 Purpose:
-    Fetch the user's PUBLIC repositories from the GitHub REST API so they can be
-    shown in the Projects section. Results are cached in MongoDB for 1 hour to
-    respect GitHub rate limits.
-
-Inputs:
-    settings.GITHUB_USERNAME, optional settings.GITHUB_TOKEN.
-
-Output:
-    list[dict] of normalized repo records.
-
-Example:
-    repos = await fetch_public_repos()
-    # -> [{"name": "AI-Job-Search", "github_url": "...", "stars": 0, ...}, ...]
+    Fetch PUBLIC repositories / READMEs from the GitHub REST API during admin
+    sync only. Public requests read from Redis → MongoDB and never call GitHub.
 """
 
-from datetime import datetime, timedelta, timezone
+from __future__ import annotations
 
 import httpx
 
 from app.config import settings
-from app.database import get_cache_collection
+from app.services import cache_service
 
-_CACHE_KEY = "github_repos"
-_CACHE_TTL = timedelta(hours=1)
 _GITHUB_API = "https://api.github.com"
 
 
@@ -49,55 +36,53 @@ def _normalize_repo(repo: dict) -> dict:
     }
 
 
-async def fetch_public_repos(force_refresh: bool = False) -> list[dict]:
-    """
-    Purpose: Return the user's public repos, using a 1-hour MongoDB cache.
-    Inputs:  force_refresh (bool) - bypass the cache when True.
-    Output:  list[dict] of normalized repos (sorted by stars then recency).
-    Example: await fetch_public_repos()
-    """
-    cache = get_cache_collection()
-
-    # Cache is a best-effort optimization: if MongoDB is unreachable we still
-    # fetch live from GitHub below rather than failing the request.
-    if not force_refresh:
-        try:
-            cached = await cache.find_one({"_id": _CACHE_KEY})
-            if cached and cached["expires_at"] > datetime.now(timezone.utc):
-                return cached["data"]
-        except Exception:
-            pass
-
-    headers = {"Accept": "application/vnd.github+json"}
+def _auth_headers(*, html: bool = False) -> dict[str, str]:
+    headers = {
+        "Accept": "application/vnd.github.html" if html else "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
     if settings.GITHUB_TOKEN:
         headers["Authorization"] = f"Bearer {settings.GITHUB_TOKEN}"
+    return headers
 
+
+async def get_cached_repos() -> list[dict]:
+    """
+    Purpose: Public read — return last admin-synced repos (no live GitHub call).
+    Output:  list[dict] (may be empty if never synced).
+    """
+    data = await cache_service.cache_get(cache_service.KEY_GITHUB_REPOS)
+    return data if isinstance(data, list) else []
+
+
+async def sync_public_repos() -> list[dict]:
+    """
+    Purpose: Admin sync — live fetch from GitHub and persist to Mongo + Redis.
+    Output:  list[dict] of normalized repos.
+    """
     url = f"{_GITHUB_API}/users/{settings.GITHUB_USERNAME}/repos"
     params = {"per_page": 100, "sort": "updated", "type": "owner"}
 
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.get(url, headers=headers, params=params)
+    async with httpx.AsyncClient(timeout=20) as client:
+        resp = await client.get(url, headers=_auth_headers(), params=params)
         resp.raise_for_status()
         raw = resp.json()
 
     repos = [_normalize_repo(r) for r in raw if not r.get("fork")]
     repos.sort(key=lambda r: (r["stars"], r["updated_at"] or ""), reverse=True)
-
-    # Store/refresh the cache document (ignore failures if DB is down).
-    try:
-        await cache.update_one(
-            {"_id": _CACHE_KEY},
-            {
-                "$set": {
-                    "data": repos,
-                    "expires_at": datetime.now(timezone.utc) + _CACHE_TTL,
-                }
-            },
-            upsert=True,
-        )
-    except Exception:
-        pass
+    await cache_service.cache_set(cache_service.KEY_GITHUB_REPOS, repos)
     return repos
+
+
+# Backwards-compatible name used by older callers / admin listing.
+async def fetch_public_repos(force_refresh: bool = False) -> list[dict]:
+    """
+    Purpose: Compatibility wrapper.
+    Inputs:  force_refresh - if True, live sync; else cached read only.
+    """
+    if force_refresh:
+        return await sync_public_repos()
+    return await get_cached_repos()
 
 
 def _parse_github_repo(github_url: str) -> tuple[str, str] | None:
@@ -109,12 +94,10 @@ def _parse_github_repo(github_url: str) -> tuple[str, str] | None:
     if not github_url:
         return None
     try:
-        # Strip query/fragment and optional .git suffix.
         cleaned = github_url.strip().rstrip("/").split("?")[0].split("#")[0]
         if cleaned.endswith(".git"):
             cleaned = cleaned[:-4]
         parts = cleaned.replace("https://", "").replace("http://", "").split("/")
-        # Expect: github.com / owner / repo [/...]
         if len(parts) < 3 or parts[0].lower() != "github.com":
             return None
         owner, repo = parts[1], parts[2]
@@ -125,68 +108,47 @@ def _parse_github_repo(github_url: str) -> tuple[str, str] | None:
         return None
 
 
-async def fetch_readme(github_url: str) -> dict | None:
+async def get_cached_readme(github_url: str) -> dict | None:
     """
-    Purpose: Fetch a repository's README from the GitHub Contents API (HTML
-             rendered by GitHub so images/links work without a markdown lib).
-    Inputs:  github_url (str) - full https://github.com/owner/repo URL.
-    Output:  {name, html, download_url} or None if missing / unreachable.
-    Example: await fetch_readme("https://github.com/AryanJNayak/MyRepo")
+    Purpose: Public read — return last synced README HTML (no live GitHub call).
+    """
+    parsed = _parse_github_repo(github_url)
+    if not parsed:
+        return None
+    owner, repo = parsed
+    data = await cache_service.cache_get(cache_service.readme_key(owner, repo))
+    return data if isinstance(data, dict) else None
+
+
+async def sync_readme(github_url: str) -> dict | None:
+    """
+    Purpose: Admin sync — live fetch README and persist to Mongo + Redis.
     """
     parsed = _parse_github_repo(github_url)
     if not parsed:
         return None
     owner, repo = parsed
 
-    cache = get_cache_collection()
-    cache_key = f"github_readme:{owner}/{repo}".lower()
-
-    try:
-        cached = await cache.find_one({"_id": cache_key})
-        if cached and cached["expires_at"] > datetime.now(timezone.utc):
-            return cached["data"]
-    except Exception:
-        pass
-
-    headers = {
-        # Ask GitHub to return the README already rendered as HTML.
-        "Accept": "application/vnd.github.html",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    if settings.GITHUB_TOKEN:
-        headers["Authorization"] = f"Bearer {settings.GITHUB_TOKEN}"
-
     url = f"{_GITHUB_API}/repos/{owner}/{repo}/readme"
-
     try:
         async with httpx.AsyncClient(timeout=20) as client:
-            resp = await client.get(url, headers=headers)
+            resp = await client.get(url, headers=_auth_headers(html=True))
             if resp.status_code == 404:
                 return None
             resp.raise_for_status()
-            # With Accept: html, the body IS the rendered HTML string.
-            html = resp.text
             data = {
                 "name": "README.md",
-                "html": html,
+                "html": resp.text,
                 "repo": f"{owner}/{repo}",
                 "github_url": f"https://github.com/{owner}/{repo}",
             }
     except httpx.HTTPError:
         return None
 
-    try:
-        await cache.update_one(
-            {"_id": cache_key},
-            {
-                "$set": {
-                    "data": data,
-                    "expires_at": datetime.now(timezone.utc) + _CACHE_TTL,
-                }
-            },
-            upsert=True,
-        )
-    except Exception:
-        pass
-
+    await cache_service.cache_set(cache_service.readme_key(owner, repo), data)
     return data
+
+
+async def fetch_readme(github_url: str) -> dict | None:
+    """Purpose: Public README helper — cache only (no live fetch)."""
+    return await get_cached_readme(github_url)

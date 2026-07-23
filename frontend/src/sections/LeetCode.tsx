@@ -13,6 +13,7 @@ import { SiLeetcode } from "react-icons/si";
 import { FiExternalLink, FiTrendingUp } from "react-icons/fi";
 import { FaTrophy } from "react-icons/fa6";
 
+import BouncingDots from "@/components/BouncingDots";
 import SectionHeading from "@/components/SectionHeading";
 import { getLeetCodeStats } from "@/api/leetcode";
 import { FALLBACK_LEETCODE } from "@/lib/fallback";
@@ -20,11 +21,13 @@ import type { LeetCodeStats } from "@/types";
 
 export default function LeetCode() {
   const [stats, setStats] = useState<LeetCodeStats>(FALLBACK_LEETCODE);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getLeetCodeStats()
       .then(setStats)
-      .catch(() => setStats(FALLBACK_LEETCODE));
+      .catch(() => setStats(FALLBACK_LEETCODE))
+      .finally(() => setLoading(false));
   }, []);
 
   const kpis = [
@@ -74,13 +77,17 @@ export default function LeetCode() {
           {/* Solved / KPIs */}
           <div className="rounded-xl border border-white/10 bg-white/5 p-5">
             <div className="mb-3 text-center">
-              <div className="text-3xl font-bold text-slate-100">{stats.total_solved || "—"}</div>
+              <div className="text-3xl font-bold text-slate-100">
+                {loading ? <BouncingDots className="text-brand-300" /> : stats.total_solved || "—"}
+              </div>
               <div className="text-xs uppercase tracking-widest text-slate-400">Problems Solved</div>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               {kpis.map((k) => (
                 <div key={k.label}>
-                  <div className={`text-lg font-semibold ${k.color}`}>{k.value}</div>
+                  <div className={`text-lg font-semibold ${k.color}`}>
+                    {loading ? <BouncingDots /> : k.value}
+                  </div>
                   <div className="text-[10px] uppercase tracking-wider text-slate-500">
                     {k.label}
                   </div>

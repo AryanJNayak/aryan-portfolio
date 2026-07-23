@@ -8,7 +8,9 @@
  */
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FiDownload, FiMenu, FiMoon, FiSun, FiX } from "react-icons/fi";
+import { FiMenu, FiMoon, FiSun, FiX } from "react-icons/fi";
+
+import DownloadPdfButton from "@/components/DownloadPdfButton";
 
 interface NavbarProps {
   theme: "dark" | "light";
@@ -64,13 +66,14 @@ export default function Navbar({ theme, onToggleTheme, resumePdf }: NavbarProps)
           >
             {theme === "dark" ? <FiSun /> : <FiMoon />}
           </button>
-          <a
-            href={resumePdf}
-            download
-            className="hidden items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-medium text-white shadow-glow transition hover:bg-brand-400 sm:inline-flex"
-          >
-            <FiDownload /> Resume
-          </a>
+          <div className="hidden sm:block">
+            <DownloadPdfButton
+              href={resumePdf}
+              label="Resume"
+              compact
+              className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-medium text-white shadow-glow transition hover:bg-brand-400"
+            />
+          </div>
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label="Toggle menu"

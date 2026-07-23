@@ -19,13 +19,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import ping
-from app.routes import auth, contact, github, leetcode, media, profile, projects
+from app.redis_client import ping_redis
+from app.routes import admin, auth, contact, github, leetcode, media, profile, projects
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Purpose: Startup/shutdown hook. Verifies the MongoDB connection on boot.
+    Purpose: Startup/shutdown hook. Verifies MongoDB (and Redis if configured).
     Inputs:  the FastAPI app.
     Output:  yields control to the running server.
     """
@@ -34,6 +35,14 @@ async def lifespan(app: FastAPI):
         print("[startup] Connected to MongoDB Atlas.")
     except Exception as exc:  # pragma: no cover - surfaced in logs only
         print(f"[startup] WARNING: MongoDB ping failed: {exc}")
+
+    if settings.REDIS_URL:
+        if await ping_redis():
+            print("[startup] Connected to Redis.")
+        else:
+            print("[startup] WARNING: Redis configured but unreachable; using Mongo cache only.")
+    else:
+        print("[startup] REDIS_URL not set — public cache uses MongoDB only.")
     yield
 
 
@@ -55,6 +64,7 @@ app.add_middleware(
 
 # Register resource routers.
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(profile.router)
 app.include_router(projects.router)
 app.include_router(github.router)
@@ -77,13 +87,19 @@ async def root() -> dict:
 async def health() -> dict:
     """
     Route:   GET /api/health
-    Purpose: Report API + database health for monitoring.
-    Output:  {api: "ok", database: "ok"|"error"}.
+    Purpose: Report API + database (+ Redis) health for monitoring.
+    Output:  {api, database, redis}.
     """
     try:
         await ping()
         db_status = "ok"
     except Exception:
         db_status = "error"
-    return {"api": "ok", "database": db_status}
+
+    if not settings.REDIS_URL:
+        redis_status = "disabled"
+    else:
+        redis_status = "ok" if await ping_redis() else "error"
+
+    return {"api": "ok", "database": db_status, "redis": redis_status}
 

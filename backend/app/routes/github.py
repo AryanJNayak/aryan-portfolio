@@ -2,27 +2,24 @@
 GitHub routes.
 
 Base path: /api/github
-Purpose:   Expose the raw list of public GitHub repositories (used by the admin
-           panel when enriching a repo into a curated project).
+Purpose:   Serve cached GitHub repos / READMEs (populated by admin sync only).
 """
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.services.github_service import fetch_public_repos, fetch_readme
+from app.services.github_service import get_cached_readme, get_cached_repos
 
 router = APIRouter(prefix="/api/github", tags=["github"])
 
 
 @router.get("/repos")
-async def get_repos(refresh: bool = False) -> list[dict]:
+async def get_repos() -> list[dict]:
     """
-    Route:   GET /api/github/repos?refresh=false
-    Purpose: Return the user's public repositories (cached 1h).
-    Inputs:  query `refresh` (bool) - force a live refetch.
-    Output:  list of normalized repo dicts.
-    Example: GET /api/github/repos
+    Route:   GET /api/github/repos
+    Purpose: Return last admin-synced public repositories (no live GitHub call).
+    Output:  list of normalized repo dicts (possibly empty before first sync).
     """
-    return await fetch_public_repos(force_refresh=refresh)
+    return await get_cached_repos()
 
 
 @router.get("/readme")
@@ -31,12 +28,14 @@ async def get_readme(
 ) -> dict:
     """
     Route:   GET /api/github/readme?url=https://github.com/owner/repo
-    Purpose: Fetch the repository README (HTML rendered by GitHub) for the
-             project detail page.
+    Purpose: Return the last admin-synced README HTML for a repository.
     Inputs:  query `url` (str) - https://github.com/{owner}/{repo}
-    Output:  {name, html, repo, github_url}; 404 if no README.
+    Output:  {name, html, repo, github_url}; 404 if not synced / missing.
     """
-    readme = await fetch_readme(url)
+    readme = await get_cached_readme(url)
     if not readme:
-        raise HTTPException(status_code=404, detail="README not found for this repository")
+        raise HTTPException(
+            status_code=404,
+            detail="README not found. Run Admin → Sync Data if this repo was added recently.",
+        )
     return readme

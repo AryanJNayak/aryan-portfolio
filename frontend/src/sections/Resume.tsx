@@ -7,8 +7,9 @@
  * Inputs:  profile (Profile) - uses resume_pdf + resume_drive_url.
  */
 import { motion } from "framer-motion";
-import { FiDownload, FiExternalLink } from "react-icons/fi";
+import { FiExternalLink } from "react-icons/fi";
 
+import DownloadPdfButton from "@/components/DownloadPdfButton";
 import SectionHeading from "@/components/SectionHeading";
 import type { Profile } from "@/types";
 
@@ -30,10 +31,8 @@ export default function Resume({ profile }: ResumeProps) {
       >
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 p-5">
           <h3 className="font-heading text-lg font-semibold text-slate-100">Aryan Nayak — CV</h3>
-          <div className="flex flex-wrap gap-3">
-            <a href={profile.resume_pdf} download className="btn-primary">
-              <FiDownload /> Download PDF
-            </a>
+          <div className="flex flex-wrap items-start gap-3">
+            <DownloadPdfButton href={profile.resume_pdf} label="Download PDF" />
             <a
               href={profile.resume_drive_url}
               target="_blank"
@@ -51,12 +50,9 @@ export default function Resume({ profile }: ResumeProps) {
           type="application/pdf"
           className="h-[80vh] w-full bg-night-900"
         >
-          <div className="p-10 text-center text-slate-400">
-            Your browser can't display the PDF inline.{" "}
-            <a href={profile.resume_pdf} download className="text-brand-400 underline">
-              Download it instead
-            </a>
-            .
+          <div className="flex flex-col items-center gap-4 p-10 text-center text-slate-400">
+            <p>Your browser can't display the PDF inline.</p>
+            <DownloadPdfButton href={profile.resume_pdf} label="Download it instead" />
           </div>
         </object>
       </motion.div>

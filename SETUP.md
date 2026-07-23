@@ -58,6 +58,17 @@ uvicorn app.main:app --reload --port 8000
 | `JWT_SECRET` | Random secret — `python -c "import secrets;print(secrets.token_hex(32))"` |
 | `GITHUB_USERNAME` | `AryanJNayak` (public repos import) |
 | `LEETCODE_USERNAME` | `Jsjsn73` (stats card) |
+| `REDIS_URL` | Optional. Local `redis://localhost:6379/0` or Upstash `rediss://…`. Leave empty to use MongoDB cache only. |
+
+### Admin data sync (important)
+
+Public visitors **never** call GitHub or LeetCode. After you log in at `/admin`, click **Sync Data** to:
+
+1. Live-fetch GitHub repos + READMEs and LeetCode stats  
+2. Store them in MongoDB (and Redis when `REDIS_URL` is set)  
+3. Serve that snapshot to the public site until you sync again  
+
+If Redis is unset or down, the API still works using the MongoDB `cache` collection.
 
 ## 2. Frontend
 
