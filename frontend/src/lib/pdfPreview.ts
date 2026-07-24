@@ -9,14 +9,16 @@ export function supportsInlinePdf(): boolean {
   if (typeof navigator === "undefined") return false;
 
   // Chromium / Firefox / Safari: reflects real embed capability (not UA spoof).
-  if ("pdfViewerEnabled" in navigator) {
-    return Boolean(navigator.pdfViewerEnabled);
+  if (typeof navigator.pdfViewerEnabled === "boolean") {
+    return navigator.pdfViewerEnabled;
   }
 
-  // Legacy hint when pdfViewerEnabled is missing.
+  // Legacy hint when pdfViewerEnabled is missing (MimeTypeArray dropped from DOM typings).
+  const legacy = navigator as Navigator & {
+    mimeTypes?: { namedItem?: (type: string) => unknown };
+  };
   try {
-    const mime = navigator.mimeTypes?.namedItem?.("application/pdf");
-    if (mime) return true;
+    if (legacy.mimeTypes?.namedItem?.("application/pdf")) return true;
   } catch {
     /* ignore */
   }
