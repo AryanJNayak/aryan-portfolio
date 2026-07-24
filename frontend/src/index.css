@@ -133,6 +133,29 @@
     @apply bg-white;
   }
 
+  /* Mobile dark: solidify translucent washes. Without backdrop-blur they only
+     muddle content against the page background (light mode already remaps these). */
+  @media (max-width: 767px) {
+    html.dark .bg-white\/5 {
+      @apply bg-night-800;
+    }
+    html.dark .bg-white\/10 {
+      @apply bg-night-700;
+    }
+    html.dark .hover\:bg-white\/5:hover {
+      @apply bg-night-700;
+    }
+    html.dark .bg-night-900\/60 {
+      @apply bg-night-900;
+    }
+    html.dark .bg-black\/60 {
+      @apply bg-night-900;
+    }
+    html.dark .bg-black\/40 {
+      @apply bg-night-800;
+    }
+  }
+
   h1, h2, h3, h4 {
     @apply font-heading;
   }
@@ -162,12 +185,13 @@
     @apply from-brand-700 via-brand-600 to-indigo-700;
   }
 
-  /* Frosted glass card. Skip heavy backdrop-blur on small screens for scroll FPS. */
+  /* Frosted glass card. Skip heavy backdrop-blur on small screens for scroll FPS;
+     use a solid night fill there so dark-mode cards don't read as see-through. */
   .glass {
-    @apply rounded-2xl border border-white/10 bg-white/5 md:backdrop-blur-md;
+    @apply rounded-2xl border border-white/10 bg-night-900 md:bg-white/5 md:backdrop-blur-md;
   }
   html:not(.dark) .glass {
-    @apply border-2 border-slate-400 bg-white shadow-md;
+    @apply border-2 border-slate-400 bg-white shadow-md md:bg-white;
   }
 
   /* Section wrapper with consistent padding + max width. */
