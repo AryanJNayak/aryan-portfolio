@@ -51,7 +51,11 @@ export default function Resume({ profile }: ResumeProps) {
               canPreview ? "w-auto justify-end" : "w-full"
             }`}
           >
-            <DownloadPdfButton href={pdfUrl} label="Download PDF" source="resume" />
+            <DownloadPdfButton
+              href={pdfUrl}
+              label="Download PDF"
+              source="resume"
+            />
             <a
               href={profile.resume_drive_url}
               target="_blank"
@@ -71,7 +75,11 @@ export default function Resume({ profile }: ResumeProps) {
             aria-label="Resume PDF preview"
           >
             <div className="flex flex-col items-center gap-4 p-10 text-center text-slate-400">
-              <DownloadPdfButton href={pdfUrl} label="Download PDF" source="resume" />
+              <DownloadPdfButton
+                href={pdfUrl}
+                label="Download PDF"
+                source="resume"
+              />
             </div>
           </object>
         ) : null}

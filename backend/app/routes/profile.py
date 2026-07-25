@@ -9,7 +9,28 @@ Purpose:   Serve static profile data (bio, experience, education, skills, links)
 
 from fastapi import APIRouter
 
+from app.config import reload_settings
+from app.utils.logger import log, logged
+
 router = APIRouter(prefix="/api/profile", tags=["profile"])
+
+_FALLBACK_RESUME_URI = (
+    "https://drive.google.com/file/d/1dkqMsFTwZFPgYPVk9AqY4sduBapQcZQs/view?usp=drive_link"
+)
+
+
+def get_resume_uri() -> str:
+    """Return RESUME_URI from env (fresh read), or the hardcoded Drive fallback."""
+    try:
+        log("Profile", "get_resume_uri", "START")
+        # Reload so .env edits apply without relying on a stale cached Settings object.
+        uri = reload_settings().RESUME_URI.strip() or _FALLBACK_RESUME_URI
+        log("Profile", "get_resume_uri", f"OK → {uri}")
+        return uri
+    except Exception as exc:
+        log("Profile", "get_resume_uri", f"ERROR: {exc}")
+        return _FALLBACK_RESUME_URI
+
 
 # --- Static profile content (sourced from the resume) -----------------------
 _PROFILE = {
@@ -18,7 +39,7 @@ _PROFILE = {
     "tagline": "SDE Intern @ River Edge Analytics · Full-stack & AI Developer",
     "location": "Ahmedabad, Gujarat, India",
     "email": "aryannayak1509@gmail.com",
-    "resume_drive_url": "https://drive.google.com/file/d/1ta8iX_n22AAVxc_X_T0WPChvXOz99mCE/view?usp=drive_link",
+    "resume_drive_url": _FALLBACK_RESUME_URI,
     "resume_pdf": "/AryanNayak.pdf",
     "socials": {
         "github": "https://github.com/AryanJNayak",
@@ -75,6 +96,7 @@ _PROFILE = {
 
 
 @router.get("")
+@logged("Profile", "/GET Profile")
 async def get_profile() -> dict:
     """
     Route:   GET /api/profile
@@ -83,4 +105,6 @@ async def get_profile() -> dict:
     Output:  dict with all profile sections.
     Example: GET /api/profile
     """
-    return _PROFILE
+    # Explicit log so this always shows even if a decorator is skipped on reload.
+    log("Profile", "/GET Profile", "handling request")
+    return {**_PROFILE, "resume_drive_url": get_resume_uri()}

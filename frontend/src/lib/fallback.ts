@@ -7,6 +7,12 @@
  */
 import type { LeetCodeStats, Profile } from "@/types";
 
+function getResume(): string {
+  const strUri: string | undefined = import.meta.env.RESUME_URI;
+  if (strUri) return strUri;
+  return "https://drive.google.com/file/d/1dkqMsFTwZFPgYPVk9AqY4sduBapQcZQs/view?usp=sharing";
+}
+
 /** Static profile used when the API is unavailable. */
 export const FALLBACK_PROFILE: Profile = {
   name: "Aryan Nayak",
@@ -14,8 +20,7 @@ export const FALLBACK_PROFILE: Profile = {
   tagline: "SDE Intern @ River Edge Analytics · Full-stack & AI Developer",
   location: "Ahmedabad, Gujarat, India",
   email: "aryannayak1509@gmail.com",
-  resume_drive_url:
-    "https://drive.google.com/file/d/1ta8iX_n22AAVxc_X_T0WPChvXOz99mCE/view?usp=drive_link",
+  resume_drive_url: getResume(),
   resume_pdf: "/AryanNayak.pdf",
   socials: {
     github: "https://github.com/AryanJNayak",

@@ -11,11 +11,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.middlewares.auth_middleware import require_admin
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.services import project_service
+from app.utils.logger import logged
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
 @router.get("")
+@logged("Projects", "/GET Projects")
 async def get_projects() -> list[dict]:
     """
     Route:   GET /api/projects
@@ -28,6 +30,7 @@ async def get_projects() -> list[dict]:
 
 
 @router.get("/curated", dependencies=[Depends(require_admin)])
+@logged("Projects", "/GET Curated")
 async def get_curated_projects() -> list[dict]:
     """
     Route:   GET /api/projects/curated  (admin only)
@@ -38,6 +41,7 @@ async def get_curated_projects() -> list[dict]:
 
 
 @router.get("/count")
+@logged("Projects", "/GET Count")
 async def get_project_count() -> dict:
     """
     Route:   GET /api/projects/count
@@ -49,6 +53,7 @@ async def get_project_count() -> dict:
 
 
 @router.get("/{project_id}")
+@logged("Projects", "/GET ProjectDetail")
 async def get_project_detail(project_id: str) -> dict:
     """
     Route:   GET /api/projects/{project_id}
@@ -63,6 +68,7 @@ async def get_project_detail(project_id: str) -> dict:
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_admin)])
+@logged("Projects", "/POST Project")
 async def create_project(body: ProjectCreate) -> dict:
     """
     Route:   POST /api/projects  (admin only)
@@ -74,6 +80,7 @@ async def create_project(body: ProjectCreate) -> dict:
 
 
 @router.put("/{project_id}", dependencies=[Depends(require_admin)])
+@logged("Projects", "/PUT Project")
 async def update_project(project_id: str, body: ProjectUpdate) -> dict:
     """
     Route:   PUT /api/projects/{project_id}  (admin only)
@@ -88,6 +95,7 @@ async def update_project(project_id: str, body: ProjectUpdate) -> dict:
 
 
 @router.delete("/{project_id}", dependencies=[Depends(require_admin)])
+@logged("Projects", "/DELETE Project")
 async def delete_project(project_id: str) -> dict:
     """
     Route:   DELETE /api/projects/{project_id}  (admin only)

@@ -55,7 +55,9 @@ export default function DownloadPdfButton({
   };
 
   return (
-    <div className={`inline-flex flex-col ${compact ? "items-stretch" : "items-stretch gap-1.5"}`}>
+    <div
+      className={`inline-flex flex-col ${compact ? "items-stretch" : "items-stretch gap-1.5"}`}
+    >
       <button
         type="button"
         onClick={handleClick}
@@ -99,7 +101,9 @@ export default function DownloadPdfButton({
       )}
 
       {error && !compact && (
-        <span className="text-xs text-red-400">Download interrupted — opened in a new tab.</span>
+        <span className="text-xs text-red-400">
+          Download interrupted — opened in a new tab.
+        </span>
       )}
     </div>
   );

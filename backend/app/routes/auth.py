@@ -11,11 +11,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.middlewares.auth_middleware import require_admin
 from app.schemas.user import LoginRequest, TokenResponse
 from app.services.auth_service import authenticate_admin
+from app.utils.logger import logged
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=TokenResponse)
+@logged("Auth", "/POST Login")
 async def login(body: LoginRequest) -> TokenResponse:
     """
     Route:   POST /api/auth/login
@@ -34,6 +36,7 @@ async def login(body: LoginRequest) -> TokenResponse:
 
 
 @router.get("/me")
+@logged("Auth", "/GET Me")
 async def me(admin_email: str = Depends(require_admin)) -> dict:
     """
     Route:   GET /api/auth/me

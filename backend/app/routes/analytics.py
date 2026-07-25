@@ -14,6 +14,7 @@ from app.middlewares.auth_middleware import require_admin
 from app.schemas.analytics import AnalyticsEventCreate, AnalyticsReport, AnalyticsSummary
 from app.services import analytics_service
 from app.services.geo_service import geo_from_request
+from app.utils.logger import log, logged
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
@@ -21,15 +22,20 @@ Period = Literal["daily", "weekly", "monthly", "custom"]
 
 
 def _clean_loc(value: str | None) -> str | None:
-    if not value:
+    try:
+        if not value:
+            return None
+        text = value.strip()
+        if not text or text.lower() in {"null", "undefined", "n/a", "-"}:
+            return None
+        return text[:80]
+    except Exception as exc:
+        log("Analytics", "clean_loc", f"ERROR: {exc}")
         return None
-    text = value.strip()
-    if not text or text.lower() in {"null", "undefined", "n/a", "-"}:
-        return None
-    return text[:80]
 
 
 @router.post("/event", status_code=201)
+@logged("Analytics", "/POST Event")
 async def create_event(body: AnalyticsEventCreate, request: Request) -> dict:
     """
     Route:   POST /api/analytics/event
@@ -55,6 +61,7 @@ async def create_event(body: AnalyticsEventCreate, request: Request) -> dict:
 
 
 @router.get("/summary", response_model=AnalyticsSummary)
+@logged("Analytics", "/GET Summary")
 async def analytics_summary(_admin: str = Depends(require_admin)) -> AnalyticsSummary:
     """
     Route:   GET /api/analytics/summary
@@ -65,6 +72,7 @@ async def analytics_summary(_admin: str = Depends(require_admin)) -> AnalyticsSu
 
 
 @router.get("/report", response_model=AnalyticsReport)
+@logged("Analytics", "/GET Report")
 async def analytics_report(
     _admin: str = Depends(require_admin),
     period: Period = Query(default="daily"),

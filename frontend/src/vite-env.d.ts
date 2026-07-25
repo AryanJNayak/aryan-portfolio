@@ -6,6 +6,7 @@
 interface ImportMetaEnv {
   /** Base URL for the backend API (empty in dev to use the proxy). */
   readonly VITE_API_BASE_URL: string;
+  readonly RESUME_URI: string | undefined;
 }
 
 interface ImportMeta {

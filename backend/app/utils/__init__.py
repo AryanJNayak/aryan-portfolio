@@ -1,1 +1,2 @@
-"""Utility helpers (security, serialization)."""
+"""Utility helpers (security, serialization, logging)."""
+

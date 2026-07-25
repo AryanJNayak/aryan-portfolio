@@ -17,8 +17,13 @@ Example:
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Always load backend/.env even if uvicorn is started from another cwd.
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_ENV_FILE = _BACKEND_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -27,6 +32,9 @@ class Settings(BaseSettings):
     # MongoDB
     MONGODB_URI: str
     DB_NAME: str = "portfolio"
+
+    # Resume Drive URL (optional — empty uses the hardcoded fallback in profile routes)
+    RESUME_URI: str = ""
 
     # Redis (optional — leave empty to use MongoDB cache only)
     # Examples: redis://localhost:6379/0  |  rediss://default:TOKEN@host:6379
@@ -65,7 +73,7 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     RESEND_FROM: str = "Portfolio <onboarding@resend.dev>"
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=str(_ENV_FILE), extra="ignore")
 
     @property
     def cors_origins_list(self) -> list[str]:
@@ -84,6 +92,12 @@ def get_settings() -> Settings:
     Output:  A singleton `Settings` instance.
     """
     return Settings()  # type: ignore[call-arg]
+
+
+def reload_settings() -> Settings:
+    """Clear the settings cache and reload from backend/.env (useful after env edits)."""
+    get_settings.cache_clear()
+    return get_settings()
 
 
 settings = get_settings()

@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 
 from app.middlewares.auth_middleware import require_admin
 from app.services import media_service
+from app.utils.logger import logged
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
@@ -21,6 +22,7 @@ _ALLOWED = {
 
 
 @router.post("", dependencies=[Depends(require_admin)], status_code=201)
+@logged("Media", "/POST Upload")
 async def upload_media(file: UploadFile = File(...)) -> dict:
     """
     Route:   POST /api/media  (admin only, multipart/form-data)
@@ -37,6 +39,7 @@ async def upload_media(file: UploadFile = File(...)) -> dict:
 
 
 @router.get("/{file_id}")
+@logged("Media", "/GET Media")
 async def get_media(file_id: str) -> StreamingResponse:
     """
     Route:   GET /api/media/{file_id}
@@ -57,6 +60,7 @@ async def get_media(file_id: str) -> StreamingResponse:
 
 
 @router.delete("/{file_id}", dependencies=[Depends(require_admin)])
+@logged("Media", "/DELETE Media")
 async def delete_media(file_id: str) -> dict:
     """
     Route:   DELETE /api/media/{file_id}  (admin only)

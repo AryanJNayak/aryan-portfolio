@@ -15,6 +15,7 @@ from bson import ObjectId
 from app.database import get_projects_collection
 from app.services import cache_service
 from app.services.github_service import get_cached_repos
+from app.utils.logger import log, logged
 
 
 def _serialize(doc: dict) -> dict:
@@ -23,12 +24,17 @@ def _serialize(doc: dict) -> dict:
     Inputs:  doc (dict) - raw Mongo document with ObjectId `_id`.
     Output:  dict with string `id` (and `_id` removed).
     """
-    doc = dict(doc)
-    doc["id"] = str(doc.pop("_id"))
-    doc.setdefault("source", "manual")
-    return doc
+    try:
+        doc = dict(doc)
+        doc["id"] = str(doc.pop("_id"))
+        doc.setdefault("source", "manual")
+        return doc
+    except Exception as exc:
+        log("ProjectService", "_serialize", f"ERROR: {exc}")
+        raise
 
 
+@logged("ProjectService", "list_projects")
 async def list_projects() -> list[dict]:
     """
     Purpose: Return all admin-curated projects, sorted by order then recency.
@@ -37,10 +43,13 @@ async def list_projects() -> list[dict]:
     try:
         cursor = get_projects_collection().find().sort([("order", 1), ("created_at", -1)])
         return [_serialize(d) async for d in cursor]
-    except Exception:
+    except Exception as exc:
+        # Public list should stay resilient — log and return empty.
+        log("ProjectService", "list_projects", f"ERROR: {exc}")
         return []
 
 
+@logged("ProjectService", "get_project")
 async def get_project(project_id: str) -> dict | None:
     """Purpose: Fetch a single curated project by id."""
     if not ObjectId.is_valid(project_id):
@@ -49,6 +58,7 @@ async def get_project(project_id: str) -> dict | None:
     return _serialize(doc) if doc else None
 
 
+@logged("ProjectService", "create_project")
 async def create_project(data: dict) -> dict:
     """Purpose: Insert a new curated project and refresh the public merge cache."""
     now = datetime.now(timezone.utc)
@@ -59,6 +69,7 @@ async def create_project(data: dict) -> dict:
     return created
 
 
+@logged("ProjectService", "update_project")
 async def update_project(project_id: str, data: dict) -> dict | None:
     """Purpose: Patch an existing project and refresh the public merge cache."""
     if not ObjectId.is_valid(project_id):
@@ -73,6 +84,7 @@ async def update_project(project_id: str, data: dict) -> dict | None:
     return updated
 
 
+@logged("ProjectService", "delete_project")
 async def delete_project(project_id: str) -> bool:
     """Purpose: Delete a project and refresh the public merge cache."""
     if not ObjectId.is_valid(project_id):
@@ -86,27 +98,32 @@ async def delete_project(project_id: str) -> bool:
 
 def _github_as_project(repo: dict) -> dict:
     """Purpose: Map a cached GitHub repo into the public ProjectResponse shape."""
-    return {
-        "id": f"gh_{repo['name']}",
-        "title": repo["name"],
-        "description": repo["description"],
-        "content_html": "",
-        "tech": ([repo["language"]] if repo["language"] else []) + repo.get("topics", []),
-        "github_url": repo["github_url"],
-        "demo_url": repo["demo_url"],
-        "thumbnail": None,
-        "images": [],
-        "video_url": None,
-        "featured": False,
-        "order": 999,
-        "source": "github",
-        "stars": repo["stars"],
-        "language": repo["language"],
-        "created_at": repo["created_at"],
-        "updated_at": repo["updated_at"],
-    }
+    try:
+        return {
+            "id": f"gh_{repo['name']}",
+            "title": repo["name"],
+            "description": repo["description"],
+            "content_html": "",
+            "tech": ([repo["language"]] if repo["language"] else []) + repo.get("topics", []),
+            "github_url": repo["github_url"],
+            "demo_url": repo["demo_url"],
+            "thumbnail": None,
+            "images": [],
+            "video_url": None,
+            "featured": False,
+            "order": 999,
+            "source": "github",
+            "stars": repo["stars"],
+            "language": repo["language"],
+            "created_at": repo["created_at"],
+            "updated_at": repo["updated_at"],
+        }
+    except Exception as exc:
+        log("ProjectService", "_github_as_project", f"ERROR: {exc}")
+        raise
 
 
+@logged("ProjectService", "build_merged_projects")
 async def build_merged_projects() -> list[dict]:
     """
     Purpose: Build curated + cached-GitHub list (no live API calls).
@@ -124,6 +141,7 @@ async def build_merged_projects() -> list[dict]:
     return curated + github_projects
 
 
+@logged("ProjectService", "rebuild_merged_projects_cache")
 async def rebuild_merged_projects_cache() -> list[dict]:
     """Purpose: Recompute merged list and write Mongo + Redis."""
     merged = await build_merged_projects()
@@ -131,6 +149,7 @@ async def rebuild_merged_projects_cache() -> list[dict]:
     return merged
 
 
+@logged("ProjectService", "list_merged_projects")
 async def list_merged_projects() -> list[dict]:
     """
     Purpose: Public projects list from Redis → Mongo, rebuilding from local
@@ -142,6 +161,7 @@ async def list_merged_projects() -> list[dict]:
     return await rebuild_merged_projects_cache()
 
 
+@logged("ProjectService", "get_public_project")
 async def get_public_project(project_id: str) -> dict | None:
     """Purpose: Fetch one public project by merged-list id."""
     for project in await list_merged_projects():

@@ -14,8 +14,12 @@ import type { TokenResponse } from "@/types";
  * Example: await login({ email, password });
  */
 export async function login(form: LoginForm): Promise<void> {
-  const { data } = await apiClient.post<TokenResponse>("/api/auth/login", form);
-  setToken(data.access_token);
+  try {
+    const { data } = await apiClient.post<TokenResponse>("/api/auth/login", form);
+    setToken(data.access_token);
+  } catch {
+    throw new Error("Invalid credentials");
+  }
 }
 
 /**

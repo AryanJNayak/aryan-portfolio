@@ -14,8 +14,10 @@ from datetime import datetime, timezone
 from app.services import cache_service, project_service
 from app.services.github_service import sync_public_repos, sync_readme
 from app.services.leetcode_service import sync_leetcode_stats
+from app.utils.logger import log, logged
 
 
+@logged("SyncService", "run_full_sync")
 async def run_full_sync() -> dict:
     """
     Purpose: Live-fetch all external portfolio data and warm caches.
@@ -31,7 +33,9 @@ async def run_full_sync() -> dict:
     try:
         repos = await sync_public_repos()
         result["sources"]["github_repos"] = {"ok": True, "count": len(repos)}
+        log("SyncService", "sync_public_repos", f"OK count={len(repos)}")
     except Exception as exc:
+        log("SyncService", "sync_public_repos", f"ERROR: {exc}")
         result["ok"] = False
         result["sources"]["github_repos"] = {"ok": False, "error": str(exc)}
         repos = await cache_service.cache_get(cache_service.KEY_GITHUB_REPOS) or []
@@ -45,7 +49,9 @@ async def run_full_sync() -> dict:
             "total_solved": stats.get("total_solved"),
             "current_rating": stats.get("current_rating"),
         }
+        log("SyncService", "sync_leetcode_stats", "OK")
     except Exception as exc:
+        log("SyncService", "sync_leetcode_stats", f"ERROR: {exc}")
         result["ok"] = False
         result["sources"]["leetcode"] = {"ok": False, "error": str(exc)}
 
@@ -60,8 +66,8 @@ async def run_full_sync() -> dict:
         for project in curated:
             if project.get("github_url"):
                 urls.add(project["github_url"])
-    except Exception:
-        pass
+    except Exception as exc:
+        log("SyncService", "list_projects", f"ERROR: {exc}")
 
     readme_ok = 0
     readme_fail = 0
@@ -72,7 +78,8 @@ async def run_full_sync() -> dict:
                 readme_ok += 1
             else:
                 readme_fail += 1
-        except Exception:
+        except Exception as exc:
+            log("SyncService", "sync_readme", f"ERROR url={url}: {exc}")
             readme_fail += 1
     result["sources"]["github_readmes"] = {
         "ok": True,
@@ -80,21 +87,29 @@ async def run_full_sync() -> dict:
         "missing": readme_fail,
         "attempted": len(urls),
     }
+    log("SyncService", "sync_readmes", f"synced={readme_ok} missing={readme_fail}")
 
     # --- Merged public projects list ---
     try:
         merged = await project_service.rebuild_merged_projects_cache()
         result["sources"]["merged_projects"] = {"ok": True, "count": len(merged)}
+        log("SyncService", "rebuild_merged_projects_cache", f"OK count={len(merged)}")
     except Exception as exc:
+        log("SyncService", "rebuild_merged_projects_cache", f"ERROR: {exc}")
         result["ok"] = False
         result["sources"]["merged_projects"] = {"ok": False, "error": str(exc)}
 
-    await cache_service.cache_set(
-        cache_service.KEY_SYNC_META,
-        {
-            "last_synced_at": result["synced_at"],
-            "ok": result["ok"],
-            "sources": result["sources"],
-        },
-    )
+    try:
+        await cache_service.cache_set(
+            cache_service.KEY_SYNC_META,
+            {
+                "last_synced_at": result["synced_at"],
+                "ok": result["ok"],
+                "sources": result["sources"],
+            },
+        )
+    except Exception as exc:
+        log("SyncService", "cache_set_sync_meta", f"ERROR: {exc}")
+        raise
+
     return result

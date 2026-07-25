@@ -13,8 +13,10 @@ Example:
 from bson import ObjectId
 
 from app.database import get_gridfs_bucket
+from app.utils.logger import log, logged
 
 
+@logged("MediaService", "save_media")
 async def save_media(data: bytes, filename: str, content_type: str) -> str:
     """
     Purpose: Persist a media file in GridFS.
@@ -28,6 +30,7 @@ async def save_media(data: bytes, filename: str, content_type: str) -> str:
     return str(file_id)
 
 
+@logged("MediaService", "open_media")
 async def open_media(file_id: str):
     """
     Purpose: Open a stored media file for streaming back to the client.
@@ -43,6 +46,7 @@ async def open_media(file_id: str):
     return stream, content_type, stream.length
 
 
+@logged("MediaService", "delete_media")
 async def delete_media(file_id: str) -> bool:
     """
     Purpose: Remove a media file from GridFS.
@@ -54,5 +58,6 @@ async def delete_media(file_id: str) -> bool:
     try:
         await get_gridfs_bucket().delete(ObjectId(file_id))
         return True
-    except Exception:
+    except Exception as exc:
+        log("MediaService", "delete_media", f"ERROR: {exc}")
         return False

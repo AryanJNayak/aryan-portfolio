@@ -27,7 +27,7 @@ Portfolio/
     │   ├── types/               # TypeScript interfaces
     │   ├── schemas/             # Client-side validation
     │   ├── hooks/ · lib/        # Theme/profile hooks, fallback data, icons
-    ├── public/AryanNayak.pdf    # Downloadable resume
+    ├── public/AryanNayakResume2026.pdf    # Downloadable resume
     └── package.json
 ```
 

@@ -6,7 +6,6 @@ Purpose:   Accept messages from the site's Contact form (saved to MongoDB),
            email them to the owner via SMTP, and let the admin read them.
 """
 
-import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
@@ -15,13 +14,13 @@ from app.database import get_contacts_collection
 from app.middlewares.auth_middleware import require_admin
 from app.schemas.contact import ContactCreate
 from app.services.email_service import email_configured, send_contact_email
-
-logger = logging.getLogger(__name__)
+from app.utils.logger import log, logged
 
 router = APIRouter(prefix="/api/contact", tags=["contact"])
 
 
 @router.post("", status_code=201)
+@logged("Contact", "/POST Contact")
 async def create_contact(body: ContactCreate) -> dict:
     """
     Route:   POST /api/contact
@@ -44,16 +43,18 @@ async def create_contact(body: ContactCreate) -> dict:
                 message=body.message,
             )
             emailed = True
-        except Exception:
+            log("Contact", "send_contact_email", "OK")
+        except Exception as exc:
             # Message is already saved — don't fail the visitor's submit.
-            logger.exception("Failed to send contact email")
+            log("Contact", "send_contact_email", f"ERROR: {exc}")
     else:
-        logger.warning("Email not configured — contact message saved without emailing")
+        log("Contact", "/POST Contact", "Email not configured — saved without emailing")
 
     return {"success": True, "id": str(result.inserted_id), "emailed": emailed}
 
 
 @router.get("", dependencies=[Depends(require_admin)])
+@logged("Contact", "/GET Contacts")
 async def list_contacts() -> list[dict]:
     """
     Route:   GET /api/contact  (admin only)

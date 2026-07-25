@@ -12,9 +12,11 @@ Example:
 import secrets
 
 from app.config import settings
+from app.utils.logger import log, logged
 from app.utils.security import create_access_token
 
 
+@logged("AuthService", "authenticate_admin")
 def authenticate_admin(email: str, password: str) -> str | None:
     """
     Purpose: Check submitted credentials and mint an access token if valid.
@@ -27,5 +29,7 @@ def authenticate_admin(email: str, password: str) -> str | None:
     password_ok = secrets.compare_digest(password, settings.ADMIN_PASSWORD)
 
     if email_ok and password_ok:
+        log("AuthService", "authenticate_admin", "Credentials matched")
         return create_access_token({"sub": settings.ADMIN_EMAIL})
+    log("AuthService", "authenticate_admin", "Credentials rejected")
     return None

@@ -50,7 +50,11 @@ export default function App() {
   return (
     <div className="relative min-h-screen">
       <AnimatedBackground />
-      <Navbar theme={theme} onToggleTheme={toggleTheme} resumePdf={profile.resume_pdf} />
+      <Navbar
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        resumePdf={profile.resume_pdf}
+      />
 
       <main>
         <Hero profile={profile} />

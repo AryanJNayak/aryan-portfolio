@@ -11,11 +11,13 @@ from fastapi import APIRouter, Depends, Query
 from app.middlewares.auth_middleware import require_admin
 from app.services import cache_service
 from app.services.sync_service import run_full_sync
+from app.utils.logger import logged
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 @router.post("/sync", dependencies=[Depends(require_admin)])
+@logged("Admin", "/POST Sync")
 async def sync_portfolio_data() -> dict:
     """
     Route:   POST /api/admin/sync  (admin only)
@@ -27,6 +29,7 @@ async def sync_portfolio_data() -> dict:
 
 
 @router.get("/sync/status", dependencies=[Depends(require_admin)])
+@logged("Admin", "/GET SyncStatus")
 async def sync_status() -> dict:
     """
     Route:   GET /api/admin/sync/status  (admin only)
@@ -37,6 +40,7 @@ async def sync_status() -> dict:
 
 
 @router.get("/cache-benchmark", dependencies=[Depends(require_admin)])
+@logged("Admin", "/GET CacheBenchmark")
 async def cache_benchmark(rounds: int = Query(5, ge=1, le=20)) -> dict:
     """
     Route:   GET /api/admin/cache-benchmark?rounds=5  (admin only)

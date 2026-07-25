@@ -8,11 +8,13 @@ Purpose:   Serve cached GitHub repos / READMEs (populated by admin sync only).
 from fastapi import APIRouter, HTTPException, Query
 
 from app.services.github_service import get_cached_readme, get_cached_repos
+from app.utils.logger import logged
 
 router = APIRouter(prefix="/api/github", tags=["github"])
 
 
 @router.get("/repos")
+@logged("GitHub", "/GET Repos")
 async def get_repos() -> list[dict]:
     """
     Route:   GET /api/github/repos
@@ -23,6 +25,7 @@ async def get_repos() -> list[dict]:
 
 
 @router.get("/readme")
+@logged("GitHub", "/GET Readme")
 async def get_readme(
     url: str = Query(..., description="Full GitHub repository URL"),
 ) -> dict:
